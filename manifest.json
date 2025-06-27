@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "테마 파크",
+  "version": "1.0",
+  "version_name": "1.0 Beta 5",
+  "description": "제타에 다양한 테마와 편의 기능을 추가합니다.",
+  "permissions": ["storage", "clipboardWrite"],
+  "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "32": "icon.png",
+      "48": "icon.png"
+    }
+  },
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://zeta-ai.io/*"],
+      "css": ["css/ui.css"],
+      "js": [
+        "js/core.js",
+        "js/api.js",
+        "js/features.js",
+        "js/ui.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "css/insta.css", 
+        "css/discord.css", 
+        "css/ui.css",
+        "css/_base.css"
+      ],
+      "matches": ["https://zeta-ai.io/*"]
+    }
+  ]
+}

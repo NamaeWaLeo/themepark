@@ -1,0 +1,60 @@
+/* insta.css */
+/* DM 스타일 테마 */
+
+/* --- 테마 색상 변수 정의 --- */
+:root {
+    --main-bg-color: #121212;
+    --primary-gradient: linear-gradient(to right, #6a11cb 0%, #2575fc 100%);
+    --component-bg-color: #1e1e1e;
+    --component-bg-alt-color: #2a2a2a;
+    --text-color: #f5f5f5;
+    --sub-text-color: #a8a8a8;
+    --panel-bg-color: #363636;
+    --panel-text-color: #f5f5f5;
+    --panel-sub-text-color: #b0b0b0;
+    --accent-color: #3797F0; /* 인스타그램 블루 */
+    --accent-text-color: #ffffff;
+    --border-color: #363636;
+}
+
+/* --- 테마 고유 스타일 --- */
+/* 푸터의 링크는 밑줄을 표시한다. */
+footer a { text-decoration: underline !important; }
+
+/* 캐릭터 수정 페이지의 링크 색상 */
+div[data-index] a[href*="/edit"] { 
+    color: white !important; 
+    font-weight: 600; 
+}
+/* 채팅방 상단 둥근 모서리 부분의 스타일 */
+.bg-gray-main[class*="rounded-t-xl"] { 
+    background-color: #121212 !important; 
+    border-top: 1px solid #333 !important; 
+}
+/* 활성화된 탭의 하단 테두리 색상 */
+.border-b-primary-400 { border-color: var(--accent-color) !important; }
+
+/* 캐릭터 목록에서 약간 다른 배경색을 적용한다. */
+div[data-index] > .bg-gray-sub1 { 
+    background-color: var(--component-bg-alt-color) !important; 
+}
+
+/* --- 채팅방 스타일 --- */
+.bg-gray-sub1 { background-color: var(--panel-bg-color) !important; }
+.bg-gray-sub1 .text-white { color: var(--panel-text-color) !important; }
+
+/* 내 말풍선 배경을 그라데이션으로 처리한다. */
+.bg-primary-300 { background: var(--primary-gradient) !important; }
+.bg-primary-300 .text-white { color: #FFFFFF !important; }
+
+/* 기울임꼴 텍스트 스타일 */
+.body16 p em { 
+    color: var(--panel-sub-text-color) !important; 
+    font-style: italic !important; 
+    opacity: 1 !important; 
+}
+.bg-primary-300 .body16 p em { color: #f0f0f0 !important; } /* 내 말풍선 안의 기울임꼴 */
+
+/* 전송 버튼 스타일 */
+button[class*="bg-primary-400"] { background: transparent !important; }
+button[class*="bg-primary-400"] svg { color: var(--accent-color) !important; }

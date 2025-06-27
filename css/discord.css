@@ -1,0 +1,131 @@
+/* discord.css */
+/* 디스코드 스타일 테마 */
+
+/* --- 테마 색상 변수 정의 --- */
+:root {
+    --main-bg-color: #313338;
+    --component-bg-color: #2b2d31;
+    --hover-bg-color: rgba(79, 84, 92, 0.16); /* 호버 효과를 좀 더 진하게 변경 */
+    --user-hover-bg-color: rgba(79, 84, 92, 0.1);
+    --text-color: #dbdee1;
+    --sub-text-color: #949ba4;
+    --accent-color: #5865f2; /* 디스코드 블루 */
+    --accent-text-color: #ffffff;
+    --border-color: rgba(255, 255, 255, 0.06);
+    --message-divider-color: rgba(255, 255, 255, 0.08);
+}
+
+/* --- 테마 고유 스타일 --- */
+/* 말풍선 스타일을 완전히 제거하고 IRC(채팅 프로그램) 스타일로 만든다. */
+.bg-gray-sub1, .bg-primary-300, .native\:shrink.relative.flex.w-fit.flex-col {
+    background: transparent !important; 
+    padding: 0 !important; 
+    margin: 0 !important;
+    border-radius: 0 !important; 
+    align-items: flex-start !important; 
+    max-width: 100% !important;
+}
+
+/* 메시지 한 줄의 공통 스타일 */
+.swiper-slide .flex-1.flex-col,
+div > .flex-row.justify-end.py-2 {
+    padding: 0.1rem 1rem !important;
+    transition: background-color 0.1s;
+    border-top: 1px solid var(--message-divider-color);
+    padding-top: 0.75rem !important;
+    margin-top: 0.75rem !important;
+}
+/* 첫 번째 메시지는 상단 테두리를 제거한다. */
+.relative.flex.flex-col > *:first-child .flex-1.flex-col,
+.relative.flex.flex-col > *:first-child > .flex-row.justify-end.py-2 {
+    border-top: none !important; margin-top: 0 !important;
+}
+/* 메시지에 마우스를 올렸을 때 배경색 변경 */
+.swiper-slide .flex-1.flex-col:hover,
+div > .flex-row.justify-end.py-2:hover {
+    background-color: var(--hover-bg-color) !important;
+}
+
+/* 캐릭터 채팅 스타일 */
+.swiper-slide .flex-row.items-start {
+    gap: 8px !important; 
+}
+.swiper-slide .flex-row.items-start img {
+    width: 34px !important; 
+    height: 34px !important;
+    border-radius: 50%; 
+    object-fit: cover;
+}
+/* 캐릭터 이름 스타일 */
+.flex.flex-1.flex-col.gap-1 > .flex.flex-row {
+    font-size: 1rem; 
+    font-weight: 500; 
+    color: var(--text-color) !important;
+    margin-bottom: 4px;
+}
+
+/* 내 채팅 스타일 */
+.flex-row.justify-end.py-2 {
+    justify-content: flex-start !important;
+    padding-left: 1rem !important;
+}
+.flex-row.justify-end.py-2:hover {
+    background-color: var(--user-hover-bg-color) !important;
+}
+/* 내 이름 '나'를 가상 요소로 추가한다. */
+.flex-row.justify-end.py-2 > .native\:shrink::before {
+    content: '나';
+    font-size: 1rem; 
+    font-weight: 500;
+    color: var(--text-color) !important; 
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* 공통 텍스트 스타일 */
+.body16.whitespace-pre-wrap { 
+    color: var(--text-color) !important; 
+    line-height: 1.6; 
+    display: block; 
+    word-break: break-word; 
+}
+.body16.whitespace-pre-wrap p { margin: 0; }
+.body16 p em { 
+    color: var(--sub-text-color) !important; 
+    font-style: italic !important; 
+    opacity: 1 !important; 
+}
+
+/* 편집/새로고침 버튼은 마우스를 올렸을 때만 보이게 한다. */
+.flex.h-8.w-\[70px\] {
+    display: flex !important;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.swiper-slide .flex-1.flex-col:hover .flex.h-8.w-\[70px\] {
+    opacity: 1;
+}
+
+/* 입력창 및 스크롤바 */
+.bg-\[rgba\(62\,62\,65\,0\.90\)\] { background-color: #383a40 !important; }
+::-webkit-scrollbar-thumb { background: var(--component-bg-color); }
+
+/* --- 레이아웃 옵션에 따른 추가 스타일 --- */
+.compact-mode-enabled .swiper-slide .flex-1.flex-col, 
+.compact-mode-enabled div > .flex-row.justify-end.py-2 {
+    padding-top: 1px !important; 
+    padding-bottom: 1px !important;
+    margin-top: 0.1rem !important; 
+    border-top: none;
+}
+/* 컴팩트 모드에서는 이름 부분을 숨긴다. */
+.compact-mode-enabled .flex.flex-row.items-center.gap-1,
+.compact-mode-enabled .flex-row.justify-end.py-2 > .native\:shrink::before {
+    display: none;
+}
+.hide-avatars-enabled img[alt="캐릭터 프로필 이미지"] {
+    display: none !important;
+}
+.hide-avatars-enabled .swiper-slide .flex-row.items-start {
+    gap: 0 !important;
+}
