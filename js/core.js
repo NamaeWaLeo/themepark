@@ -14,7 +14,7 @@ const ThemePark = {
 
     // 확장 프로그램의 모든 상태(State)를 관리하는 객체다.
     state: {
-        CURRENT_VERSION: "1.0 Beta 5", // 현재 버전 정보
+        CURRENT_VERSION: "1.0 Beta 6", // 현재 버전 정보 (수정: 1.0 Beta 6)
         // 동적으로 생성되는 스타일 시트의 참조를 저장한다.
         dynamicThemeStyleElement: null,
         baseThemeStyleElement: null, // 공통 베이스 테마
@@ -23,10 +23,7 @@ const ThemePark = {
         eyeSaverStyleElement: null,
         backgroundEffectStyleElement: null,
         scrollbarStyleElement: null,
-        focusModeStyleElement: null, // 집중 모드 스타일
-        // 페이지의 변경을 감지하는 MutationObserver 인스턴스다.
-        pageObserver: null,
-        profileObserver: null,
+        // pageObserver 및 profileObserver는 더 이상 필요 없음 (삭제)
         // 주기적인 작업을 위한 타이머 ID를 저장한다.
         autoSaveInterval: null,
         backgroundEffectInterval: null,
@@ -72,10 +69,7 @@ const ThemePark = {
             ThemePark.state.autoSaveInterval = null;
         }
         // 이전 페이지의 DOM을 감시하던 pageObserver가 있다면 중지한다.
-        if (ThemePark.state.pageObserver) {
-            ThemePark.state.pageObserver.disconnect();
-            ThemePark.state.pageObserver = null;
-        }
+        // 수정: pageObserver는 더 이상 필요 없으므로 관련 코드 삭제
         
         // 현재 URL이 캐릭터 수정 페이지('/edit')를 포함하는지 확인한다.
         if (window.location.pathname.includes('/edit')) {
@@ -116,11 +110,8 @@ const ThemePark = {
         }
 
         // 저장된 동의 여부와 앱 버전을 불러온다.
-        chrome.storage.sync.get(['hasConsented', 'appVersion', 'focusModeEnabled'], (data) => {
-            // 집중 모드가 켜져있다면, UI를 주입하지 않고 바로 스타일만 적용한다.
-            if (data.focusModeEnabled) {
-                ThemePark.features.applyFocusModeStyle(true);
-            }
+        chrome.storage.sync.get(['hasConsented', 'appVersion'], (data) => { // 수정: focusModeEnabled 삭제
+            // 수정: 집중 모드 관련 UI 주입 로직 삭제
             
             // 사용자가 아직 고지 사항에 동의하지 않았다면, 인트로 화면을 보여준다.
             if (!data.hasConsented) {
@@ -148,16 +139,13 @@ const ThemePark = {
 
     // --- 실행 시작점 ---
     
-    // (수정) chrome.storage의 변경을 감지하는 리스너를 등록한다.
-    chrome.storage.onChanged.addListener((changes, namespace) => {
-        // 'sync' 스토리지에서 'focusModeEnabled' 키가 변경되었는지 확인한다.
-        if (namespace === 'sync' && changes.focusModeEnabled) {
-            // 변경된 새 값을 가져온다.
-            const newValue = changes.focusModeEnabled.newValue;
-            // 값의 존재 여부(true/false)에 따라 스타일 적용 함수를 호출한다.
-            ThemePark.features.applyFocusModeStyle(!!newValue);
-        }
-    });
+    // 수정: chrome.storage의 변경을 감지하는 리스너 중 focusModeEnabled 관련 로직 삭제
+    // chrome.storage.onChanged.addListener((changes, namespace) => {
+    //     if (namespace === 'sync' && changes.focusModeEnabled) {
+    //         const newValue = changes.focusModeEnabled.newValue;
+    //         ThemePark.features.applyFocusModeStyle(!!newValue);
+    //     }
+    // });
 
     // 페이지 로딩 상태에 따라 onPageLoad 함수를 실행한다.
     if (document.readyState === 'complete') {

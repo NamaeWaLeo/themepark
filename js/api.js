@@ -118,7 +118,7 @@ ThemePark.api = {
             ]
         }];
     
-        const rawYaml = await this._callGeminiAPI('gemini-1.5-pro-latest', geminiApiKey, contents, '이미지 분석 및 프로필 생성 중...');
+        const rawYaml = await this._callGeminiAPI('gemini-2.0-flash', geminiApiKey, contents, '이미지 분석 및 프로필 생성 중...');
         return rawYaml;
     },
     
@@ -153,63 +153,17 @@ ThemePark.api = {
     },
 
     /**
-     * Gemini Vision API를 사용하여 이미지로부터 캐릭터 프로필을 생성한다.
-     */
-    async generateProfileWithGemini(imageUrl) {
-        const { geminiApiKey } = await chrome.storage.sync.get('geminiApiKey');
-        if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
-    
-        // fetch를 통해 이미지를 blob으로 가져온다. CORS 이슈를 피하기 위함.
-        const response = await fetch(imageUrl);
-        if (!response.ok) throw new Error(`이미지를 불러올 수 없습니다: ${response.statusText}`);
-        const blob = await response.blob();
-    
-        // 이미지를 Base64 문자열로 변환한다.
-        const base64data = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    
-        const systemPrompt = `You are a creative writer specializing in character creation for role-playing platforms. Based on the provided image, create a detailed character profile in YAML format. The profile should be imaginative and fitting for a story.
-    
-    **Instructions:**
-    1.  Analyze the image to infer the character's appearance, mood, potential personality, and the setting they might be in.
-    2.  Create a profile using the following keys: 'name', 'appearance', 'personality', 'speech_style', and 'background'.
-    3.  'name': Suggest a fitting name.
-    4.  'appearance': Describe their visual features from the image in detail.
-    5.  'personality': Infer their personality traits. Are they cheerful, melancholic, mysterious?
-    6.  'speech_style': Describe how they would talk. Is their speech formal, casual, poetic?
-    7.  'background': Create a brief, compelling backstory that fits the character's overall vibe.
-    
-    **Output Format:**
-    - You MUST return the result as a single, raw YAML block.
-    - Do not include any explanatory text, markdown formatting (like \`\`\`yaml), or anything outside the YAML block.
-    - The output must be in Korean.`;
-    
-        const contents = [{
-            parts: [
-                { text: systemPrompt },
-                { inline_data: { mime_type: blob.type, data: base64data } }
-            ]
-        }];
-    
-        // Gemini 1.5 Pro 모델을 사용하여 이미지와 텍스트를 함께 처리한다.
-        const rawYaml = await this._callGeminiAPI('gemini-1.5-pro-latest', geminiApiKey, contents, '이미지 분석 및 프로필 생성 중...');
-        return rawYaml;
-    },
-
-    /**
      * Gemini API를 사용하여 프롬프트를 개선하거나 아이디어를 얻는다.
      */
     async enhanceWithGemini(textareaElement, type, actionType) {
         const buttonWrapper = textareaElement.closest('section').querySelector('.prompt-btn-wrapper');
         const allButtons = buttonWrapper.querySelectorAll('button');
-        const originalButtonText = buttonWrapper.querySelector('.prompt-btn-main').textContent;
-
+        const originalButtonText = buttonWrapper.querySelector('.prompt-btn-main')?.textContent || 'AI 도우미'; 
+        
         allButtons.forEach(btn => btn.disabled = true);
-        buttonWrapper.querySelector('.prompt-btn-main').textContent = 'AI 작업 중...';
+        if (buttonWrapper.querySelector('.prompt-btn-main')) { 
+            buttonWrapper.querySelector('.prompt-btn-main').textContent = 'AI 작업 중...';
+        }
         ThemePark.state.originalPromptTexts.set(textareaElement, textareaElement.value);
 
         try {
@@ -221,15 +175,21 @@ ThemePark.api = {
             const modelToUse = geminiModel || 'gemini-1.5-flash';
             const settings = aiPromptSettings || { length: '보통', include: '', exclude: '' };
             const originalText = textareaElement.value;
-            const worldDescription = document.querySelector('textarea[name="longDescription"]')?.value || '';
-            const characterName = textareaElement.closest('.flex.flex-col.gap-6')?.querySelector('input[name*="name"]')?.value || '';
             
-            const systemPrompt = ThemePark.features.getSystemPromptForAction(type, actionType, { ...settings, worldDescription, characterName });
+            // 세계관 및 캐릭터 정보를 동적으로 가져온다.
+            const worldDescription = document.querySelector('textarea[name="longDescription"]')?.value || '';
+            const characterName = document.querySelector('input[name="name"]')?.value || ''; 
+
+            const systemPrompt = ThemePark.features.getSystemPromptForAction(type, actionType, { 
+                ...settings, 
+                worldDescription, 
+                characterName 
+            });
             const fullPrompt = `${systemPrompt}\n\n--- 사용자 원본 텍스트 ---\n${originalText}`;
 
             const newText = await this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: fullPrompt }] }], '프롬프트 생성 중...');
 
-            if (actionType === 'writers_block') {
+            if (actionType === 'writers_block') { // 이 조건은 이제 사용되지 않음
                 textareaElement.value += `\n\n--- AI 제안 ---\n${newText}`;
             } else {
                 textareaElement.value = newText;
@@ -244,10 +204,88 @@ ThemePark.api = {
             }
         } finally {
             allButtons.forEach(btn => btn.disabled = false);
-            buttonWrapper.querySelector('.prompt-btn-main').textContent = originalButtonText;
+            if (buttonWrapper.querySelector('.prompt-btn-main')) { 
+                buttonWrapper.querySelector('.prompt-btn-main').textContent = originalButtonText;
+            }
         }
     },
-    
+
+    /**
+     * AI 생성 마법사를 위한 통합 생성 함수
+     * @param {object} settings - 이름, 장르, 키워드, 세계관 키워드, 캐릭터 키워드, 이미지 URL, length (아주 짧게, 짧게, 보통)
+     * @returns {Promise<object>} 생성된 세계관 및 캐릭터 프로필 YAML
+     */
+    async generateWithWizard(settings) {
+        const { geminiApiKey, geminiModel } = await chrome.storage.sync.get('geminiApiKey');
+        if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
+        const modelToUse = geminiModel || 'gemini-2.0-flash'; // 마법사는 1.5 Pro 권장
+
+        const getLengthModifier = (length) => {
+            switch (length) {
+                case '아주 짧게': return '길이는 아주 간결하게 유지해주세요. (기존 대비 40% 축소)';
+                case '짧게': return '길이는 간결하게 유지해주세요. (기존 대비 20% 축소)';
+                case '보통': return '충분한 길이로 상세하게 작성해주세요.';
+                default: return '';
+            }
+        };
+        const lengthModifier = getLengthModifier(settings.length);
+
+        let worldPrompt = '';
+        if (settings.genre || settings.worldKeywords || settings.name || settings.keywords) {
+            worldPrompt = `당신은 시나리오 전문가입니다. 다음 정보를 바탕으로 상세한 세계관 시나리오를 YAML 형식으로 생성해주세요. 키는 '시점', '장르', '분위기', '배경', '주요_갈등'을 사용하세요.
+            사용자 입력: 이름: "${settings.name || ''}", 장르: "${settings.genre || ''}", 세계관 키워드: "${settings.worldKeywords || ''}", 공통 키워드: "${settings.keywords || ''}"
+            ${lengthModifier ? `**분량 지침:** ${lengthModifier}` : ''}
+            **제약 사항:**
+            - 모든 출력은 한국어로, YAML 블록만 반환하세요.
+            - 설명 텍스트나 마크다운 포맷팅 (예: \`\`\`yaml)은 포함하지 마세요.`;
+        }
+
+        let characterPrompt = '';
+        if (settings.characterKeywords || settings.name || settings.keywords) {
+            characterPrompt = `당신은 캐릭터 프롬프트 전문가입니다. 다음 정보를 바탕으로 상세한 캐릭터 프로필을 YAML 형식으로 생성해주세요. 다음 키만 포함하세요: 'name', 'appearance', 'personality', 'speech_style', 'relationship_with_user'. 이름은 한국어로 생성해야 합니다.
+            사용자 입력: 이름: "${settings.name || ''}", 캐릭터 키워드: "${settings.characterKeywords || ''}", 공통 키워드: "${settings.keywords || ''}"
+            ${settings.worldDescription ? `**이 캐릭터는 다음 세계관 내에 존재해야 합니다:**\n${settings.worldDescription}\n` : ''}
+            ${lengthModifier ? `**분량 지침:** ${lengthModifier}` : ''}
+            **제약 사항:**
+            - 모든 출력은 한국어로, YAML 블록만 반환하세요.
+            - 설명 텍스트나 마크다운 포맷팅 (예: \`\`\`yaml)은 포함하지 마세요.`;
+        }
+
+        let imageContents = [];
+        if (settings.imageUrl) {
+            const response = await fetch(settings.imageUrl);
+            if (!response.ok) throw new Error(`이미지를 불러올 수 없습니다: ${response.statusText}`);
+            const blob = await response.blob();
+            const base64data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+            imageContents.push({ inline_data: { mime_type: blob.type, data: base64data } });
+        }
+
+        const promises = [];
+        if (worldPrompt) {
+            promises.push(this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: worldPrompt }, ...imageContents] }], '세계관 초안 생성 중...'));
+        } else {
+            promises.push(Promise.resolve('')); // 세계관 생성 요청이 없으면 빈 문자열 반환
+        }
+
+        if (characterPrompt) {
+            promises.push(this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: characterPrompt }, ...imageContents] }], '캐릭터 초안 생성 중...'));
+        } else {
+            promises.push(Promise.resolve('')); // 캐릭터 생성 요청이 없으면 빈 문자열 반환
+        }
+
+        const [worldYaml, characterYaml] = await Promise.all(promises);
+
+        return {
+            world: worldYaml,
+            character: characterYaml
+        };
+    },
+
     /**
      * Gemini API를 사용하여 색상 팔레트를 생성한다.
      */
@@ -332,25 +370,6 @@ ThemePark.api = {
 
         } catch (error) {
             ThemePark.ui.showDynamicToast({ title: '분석 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: 4000 });
-        }
-    },
-
-    /**
-     * Gemini API를 사용하여 다음 장면을 제안한다. (이것은 매번 다른 결과가 나와야 하므로 캐싱하지 않는다)
-     */
-    async suggestNextScene(chatText) {
-        try {
-            const { geminiApiKey, geminiModel } = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
-            if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
-            
-            const systemPrompt = `You are a creative storyteller AI. Based on the context of the following dialogue, suggest three interesting and creative new scenes, plot twists, or topics of conversation to continue the story. Present the suggestions in Korean, as a numbered list.`;
-            const fullPrompt = `${systemPrompt}\n\n--- 채팅 대화 ---\n${chatText}`;
-            const modelToUse = geminiModel || 'gemini-1.5-flash';
-            const suggestions = await this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: fullPrompt }] }], '다음 장면 구상 중...');
-            
-            ThemePark.ui.showInfoModal("AI 다음 장면 추천", suggestions.replace(/\n/g, '<br>'));
-        } catch (error) {
-            ThemePark.ui.showDynamicToast({ title: '장면 추천 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: 4000 });
         }
     },
     

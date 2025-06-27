@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "테마 파크",
   "version": "1.0",
-  "version_name": "1.0 Beta 5",
+  "version_name": "1.0 Beta 6",
   "description": "제타에 다양한 테마와 편의 기능을 추가합니다.",
   "permissions": ["storage", "clipboardWrite"],
   "icons": {
