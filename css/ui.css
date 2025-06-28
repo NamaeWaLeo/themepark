@@ -452,7 +452,7 @@ html:not(.theme-park-container) { filter: none; }
     border-bottom: 1px solid rgba(255, 255, 255, 0.05); 
     color: #e0e0e0;
 }
-.section-header::after { content: '▼'; font-size: 14px; transition: transform 0.3s; color: #a0a0a0; }
+.section-header::after { content: '▼'; font-size: 14px; transition: transform 0.3s; color: #a0a0a5; }
 .setting-section.collapsed .section-header::after { transform: rotate(-90deg); }
 .section-content { padding: 20px; transition: max-height 0.4s ease-out, padding 0.4s ease-out, opacity 0.4s ease-out; } 
 .setting-section.collapsed .section-content { max-height: 0 !important; padding: 0 20px !important; opacity: 0; border-top: none; }
@@ -503,7 +503,7 @@ html:not(.theme-park-container) { filter: none; }
 .custom-actions .custom-action-btn:hover { 
     background: #666;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1), -1px -1px 3px rgba(70, 70, 75, 0.03);
-    transform: translateY(1px);
+    transform: translateY(1px); 
 }
 .custom-actions .custom-action-btn#generate-palette-btn { background-color: #3498db; }
 
@@ -533,7 +533,6 @@ html:not(.theme-park-container) { filter: none; }
         inset 1px 1px 3px rgba(0, 0, 0, 0.1), 
         inset -1px -1px 3px rgba(255, 255, 255, 0.03); 
 }
-.layout-toggle .custom-control { border-radius: 6px; } 
 .layout-toggle input:checked + .custom-control { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23fff' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26l3.072 3.09 5.104-5.12z'/%3e%3c/svg%3e"); background-position: center; background-repeat: no-repeat; background-size: 60%; }
 .radio-group { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; } 
 .radio-group .custom-control { border-radius: 50%; }
@@ -604,7 +603,6 @@ html:not(.theme-park-container) { filter: none; }
     border: none;
     border-radius: 8px; 
     cursor: pointer;
-    transition: all 0.2s ease-in-out;
     box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.2), -3px -3px 6px rgba(70, 70, 75, 0.1);
     white-space: nowrap; 
 }
@@ -896,7 +894,6 @@ html:not(.theme-park-container) { filter: none; }
 }
 #copy-translated-text-btn:hover { background-color: #666; transform: translateY(1px); box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.1); }
 
-
 /* 인트로 화면 스타일 (뉴모피즘) */
 #theme-park-intro { 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -1132,4 +1129,362 @@ html:not(.theme-park-container) { filter: none; }
 .wizard-action-buttons button#wizard-cancel-btn:hover {
     background-color: #cc372c;
     transform: translateY(1px);
+}
+
+#ranking-modal-overlay .modal-content {
+    background-color: rgba(28, 28, 30, 0.92);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    width: 70vw; /* JS로 제어됨 */
+    max-width: 1400px;
+    min-width: 375px;
+    height: 90vh; /* JS로 제어됨 */
+    max-height: 96vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    color: #e0e0e0;
+}
+
+#ranking-modal-overlay .modal-header {
+    padding: 12px 20px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+#ranking-modal-overlay .modal-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.ranking-tabs {
+    display: flex;
+    padding: 0 20px;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    background-color: rgba(0,0,0,0.2);
+}
+
+.ranking-tab-btn {
+    padding: 10px 15px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #a0a0a5;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.ranking-tab-btn:hover { color: white; }
+.ranking-tab-btn.active { color: #0a84ff; border-bottom-color: #0a84ff; }
+
+.ranking-tab-pane {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    padding: 15px 20px;
+}
+.ranking-tab-pane.active { display: block; }
+.comparison-info-text { text-align: center; font-size: 12px; color: #8e8e93; padding-bottom: 15px; }
+
+.ranking-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ranking-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.ranking-card {
+    position: relative;
+    background-color: rgba(44, 44, 46, 0.6);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+.ranking-card .favorite-btn {
+    position: absolute; top: 6px; right: 6px; z-index: 2;
+    background: rgba(0,0,0,0.6);
+    border: none; border-radius: 50%;
+    width: 28px; height: 28px;
+    font-size: 14px; color: #aaa;
+    cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+.ranking-card .favorite-btn:hover { transform: scale(1.15); color: #FFD700; }
+.ranking-card .favorite-btn.active { color: #FFD700; text-shadow: 0 0 8px #FFD700; }
+
+.ranking-card-link { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+.ranking-card-image { width: 100%; height: 88px; object-fit: cover; }
+.ranking-card-body { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.ranking-card-name { font-size: 14px; font-weight: 600; color: #f2f2f7; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-bottom-info { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: auto; }
+.ranking-card-tags { display: flex; flex-wrap: wrap; gap: 4px; overflow: hidden; align-self: flex-start; flex-shrink: 1; min-width: 0; }
+.ranking-card-tag { font-size: 10px; background-color: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #c0c0c0; }
+
+.ranking-card-footer {
+    padding: 8px 10px; display: flex;
+    justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+.ranking-card-creator { 
+    font-size: 13px; font-weight: 500; color: #a0a0a5;
+    max-width: 100px; /* 고정 너비 설정 */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    /* 추가: 모바일 환경에서 더 짧게 */
+    @media (max-width: 768px) {
+        max-width: 80px; 
+    }
+}
+.ranking-card-interactions { font-size: 16px; font-weight: 700; color: #e5e5e7; }
+
+/* 랭킹 & 즐겨찾기 테두리 효과 */
+.ranking-card.rank-gold, .ranking-card.rank-silver, .ranking-card.rank-bronze, .ranking-card.favorite-creator { border-width: 2px; }
+.ranking-card.rank-gold { border-color: #FFD700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+.ranking-card.rank-silver { border-color: #C0C0C0; box-shadow: 0 0 12px rgba(192, 192, 192, 0.5); }
+.ranking-card.rank-bronze { border-color: #CD7F32; box-shadow: 0 0 12px rgba(205, 127, 50, 0.5); }
+.ranking-card.favorite-creator { 
+    border-color: #0a84ff; 
+    box-shadow: 0 0 12px rgba(10, 132, 255, 0.5); 
+    /* 즐겨찾기 강조 배경 그라데이션 */
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.1), rgba(170, 62, 255, 0.1)), rgba(44, 44, 46, 0.6);
+}
+
+/* 상승률 표시 */
+.rank-change-text { font-size: 12px; font-weight: 600; color: #34c759; white-space: nowrap; flex-shrink: 0; }
+
+/* 데이터 및 설정 탭 */
+#ranking-data-pane .custom-actions, #ranking-settings-pane .custom-actions { border: none; padding: 0; }
+#ranking-data-pane .custom-actions { margin-top: 10px; display: flex; gap: 15px; }
+#autosave-timer-display { display: inline-block; margin-left: 10px; font-size: 13px; color: #0a84ff; font-weight: 500; }
+#favorite-creator-list, #autosave-history-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
+.history-item, .favorite-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; }
+.history-info, .favorite-item span { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-time { font-size: 13px; }
+.history-time-ago { font-size: 11px; color: #8e8e93; }
+.history-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.history-actions button, .delete-fav-btn { background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; color: #a0a0a5; cursor: pointer; padding: 5px 8px; font-size: 12px; margin-left: 5px; }
+.history-actions button:hover, .delete-fav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+.delete-fav-btn { border: none; font-size: 20px; padding: 0 5px; }
+button.danger { background-color: #ff453a !important; color: white !important; border: none !important; }
+.history-item-empty { color: #8e8e93; text-align: center; padding: 20px; }
+
+/* 모바일 반응형 */
+@media (max-width: 1200px) {
+    #ranking-modal-overlay .modal-content { width: 85vw !important; }
+    .ranking-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+    #ranking-modal-overlay .modal-content { width: 95vw !important; height: 90vh !important; }
+    .ranking-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .ranking-card-body { padding: 8px; }
+    .ranking-card-name { font-size: 13px; }
+    .ranking-card-footer { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+@media (max-width: 480px) {
+    .ranking-grid { grid-template-columns: 1fr; }
+}
+
+
+/* --- 랭킹 모달 전체 --- */
+#ranking-modal-overlay .modal-content {
+    background-color: rgba(28, 28, 30, 0.92);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+    width: 70vw; /* JS로 제어됨 */
+    max-width: 1400px;
+    min-width: 375px;
+    height: 90vh; /* JS로 제어됨 */
+    max-height: 96vh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    color: #e0e0e0;
+}
+
+#ranking-modal-overlay .modal-header {
+    padding: 12px 20px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+#ranking-modal-overlay .modal-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.ranking-tabs {
+    display: flex;
+    padding: 0 20px;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0;
+    background-color: rgba(0,0,0,0.2);
+}
+
+.ranking-tab-btn {
+    padding: 10px 15px;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: #a0a0a5;
+    font-size: 14px;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    outline: none;
+}
+
+.ranking-tab-btn:hover { color: white; }
+.ranking-tab-btn.active { color: #0a84ff; border-bottom-color: #0a84ff; }
+
+.ranking-tab-pane {
+    display: none;
+    height: 100%;
+    overflow-y: auto;
+    /* [수정] 섹션 사이의 여백 문제를 해결하기 위해 padding-bottom을 추가합니다. */
+    padding: 15px 20px;
+}
+.ranking-tab-pane.active { display: block; }
+.comparison-info-text { text-align: center; font-size: 12px; color: #8e8e93; padding-bottom: 15px; }
+
+.ranking-section {
+    margin-bottom: 25px; /* 섹션 간 여백 추가*/
+}
+
+.ranking-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ranking-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.ranking-card {
+    position: relative;
+    background-color: rgba(44, 44, 46, 0.6);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: all 0.2s ease-in-out;
+}
+
+.ranking-card .favorite-btn {
+    position: absolute; top: 6px; right: 6px; z-index: 2;
+    background: rgba(0,0,0,0.6);
+    border: none; border-radius: 50%;
+    width: 28px; height: 28px;
+    font-size: 14px; color: #aaa;
+    cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+.ranking-card .favorite-btn:hover { transform: scale(1.15); color: #FFD700; }
+.ranking-card .favorite-btn.active { color: #FFD700; text-shadow: 0 0 8px #FFD700; }
+
+.ranking-card-link { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+.ranking-card-image { width: 100%; height: 110px; object-fit: cover; }
+.ranking-card-body { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.ranking-card-name { font-size: 14px; font-weight: 600; color: #f2f2f7; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-bottom-info { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: auto; }
+.ranking-card-tags { display: flex; flex-wrap: wrap; gap: 4px; overflow: hidden; align-self: flex-start; flex-shrink: 1; min-width: 0; }
+.ranking-card-tag { font-size: 10px; background-color: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #c0c0c0; }
+
+.ranking-card-footer {
+    padding: 8px 10px; display: flex;
+    justify-content: space-between; align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+.ranking-card-creator { 
+    font-size: 13px; font-weight: 500; color: #a0a0a5;
+    max-width: 100px; /* 고정 너비 설정 */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    /* 추가: 모바일 환경에서 더 짧게 */
+    @media (max-width: 768px) {
+        max-width: 80px; 
+    }
+}
+.ranking-card-interactions { font-size: 16px; font-weight: 700; color: #e5e5e7; }
+
+/* 랭킹 & 즐겨찾기 테두리 효과 */
+.ranking-card.rank-gold, .ranking-card.rank-silver, .ranking-card.rank-bronze, .ranking-card.favorite-creator { border-width: 2px; }
+.ranking-card.rank-gold { border-color: #FFD700; box-shadow: 0 0 12px rgba(255, 215, 0, 0.5); }
+.ranking-card.rank-silver { border-color: #C0C0C0; box-shadow: 0 0 12px rgba(192, 192, 192, 0.5); }
+.ranking-card.rank-bronze { border-color: #CD7F32; box-shadow: 0 0 12px rgba(205, 127, 50, 0.5); }
+.ranking-card.favorite-creator { 
+    border-color: #0a84ff; 
+    box-shadow: 0 0 12px rgba(10, 132, 255, 0.5); 
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.1), rgba(170, 62, 255, 0.1)), rgba(44, 44, 46, 0.6); /* 즐겨찾기 강조 배경 그라데이션 */
+}
+
+/* 상승률 표시 */
+.rank-change-text { font-size: 12px; font-weight: 600; color: #34c759; white-space: nowrap; flex-shrink: 0; }
+
+/* 데이터 및 설정 탭 */
+#ranking-data-pane .custom-actions, #ranking-settings-pane .custom-actions { border: none; padding: 0; }
+#ranking-data-pane .custom-actions { margin-top: 10px; display: flex; gap: 15px; }
+#autosave-timer-display { display: inline-block; margin-left: 10px; font-size: 13px; color: #0a84ff; font-weight: 500; }
+#favorite-creator-list, #autosave-history-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
+.history-item, .favorite-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 8px; }
+.history-info, .favorite-item span { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-time { font-size: 13px; }
+.history-time-ago { font-size: 11px; color: #8e8e93; }
+.history-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.history-actions button, .delete-fav-btn { background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; color: #a0a0a5; cursor: pointer; padding: 5px 8px; font-size: 12px; margin-left: 5px; }
+.history-actions button:hover, .delete-fav-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+.delete-fav-btn { border: none; font-size: 20px; padding: 0 5px; }
+button.danger { background-color: #ff453a !important; color: white !important; border: none !important; }
+.history-item-empty { color: #8e8e93; text-align: center; padding: 20px; }
+
+/* 모바일 반응형 */
+@media (max-width: 1200px) {
+    #ranking-modal-overlay .modal-content { width: 85vw !important; }
+    .ranking-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+    #ranking-modal-overlay .modal-content { width: 95vw !important; height: 90vh !important; } /* 모바일에서 너비/높이 고정, JS 제어 무시 */
+    .ranking-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .ranking-card-body { padding: 8px; }
+    .ranking-card-name { font-size: 13px; }
+    .ranking-card-footer { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+@media (max-width: 480px) {
+    .ranking-grid { grid-template-columns: 1fr; }
 }

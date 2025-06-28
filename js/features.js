@@ -195,14 +195,13 @@ ThemePark.features = {
     },
 
     // 배경 효과를 적용하는 함수다.
-    applyBackgroundEffect(settings, bgColor) { // settings 객체를 받도록 변경
+    applyBackgroundEffect(settings, bgColor) {
         ThemePark.state.backgroundEffectStyleElement?.remove();
         clearInterval(ThemePark.state.backgroundEffectInterval);
         ThemePark.state.backgroundEffectInterval = null;
 
         let container = document.getElementById('theme-park-background-effects');
 
-        // '없음'을 선택하면 컨테이너를 제거하고 body에 배경색을 직접 적용한다.
         if (settings.lightEffect === 'none' && settings.environmentEffect === 'none' && settings.weatherEffect === 'none' && 
             !settings.particleStars && !settings.particleFireflies && !settings.particleSakura && !settings.particleLeaves && 
             !settings.particleFireworks && !settings.particleShootingStars && !settings.particleBubbles && !settings.particleMeteors) {
@@ -211,16 +210,14 @@ ThemePark.features = {
             return;
         }
         
-        // 컨테이너가 없으면 새로 만든다.
         if (!container) {
             container = document.createElement('div');
             container.id = 'theme-park-background-effects';
             document.body.insertAdjacentElement('afterbegin', container);
         }
         container.innerHTML = '';
-        container.className = `bg-effect-light-${settings.lightEffect || 'none'} bg-effect-env-${settings.environmentEffect || 'none'} bg-effect-weather-${settings.weatherEffect || 'none'}`; // 클래스명 설정
+        container.className = `bg-effect-light-${settings.lightEffect || 'none'} bg-effect-env-${settings.environmentEffect || 'none'} bg-effect-weather-${settings.weatherEffect || 'none'}`;
 
-        // 파티클(입자)을 생성하는 헬퍼 함수
         const createParticles = (count, className, options = {}) => {
             for (let i = 0; i < count; i++) {
                 const particle = document.createElement('div');
@@ -232,7 +229,6 @@ ThemePark.features = {
                 particle.style.animationDuration = `${duration}s`;
                 particle.style.animationDelay = `${delay}s`;
 
-                // 효과별 추가 스타일
                 if (['star', 'firefly', 'bubble', 'shooting-star', 'meteor'].includes(className)) {
                     const size = Math.random() * (options.size || 2) + 1;
                     particle.style.width = `${size}px`;
@@ -241,16 +237,16 @@ ThemePark.features = {
                  if (className === 'bubble') {
                     particle.style.animationTimingFunction = 'ease-in-out';
                     particle.style.animationName = 'rise';
-                    particle.style.left = `${Math.random() * 120 - 10}vw`; // 화면 밖에서도 시작
+                    particle.style.left = `${Math.random() * 120 - 10}vw`;
                 }
                 if (['star', 'firefly', 'shooting-star', 'meteor'].includes(className)) {
                     particle.style.top = `${Math.random() * 100}vh`;
                 }
-                if(className === 'cloud') { // 구름 효과
+                if(className === 'cloud') {
                     particle.style.width = `${50 + Math.random() * 150}px`;
                     particle.style.height = `${20 + Math.random() * 50}px`;
                     particle.style.top = `${Math.random() * 30}vh`;
-                    particle.style.animationDuration = `${20 + Math.random() * 40}s`; // 느리게 움직이도록
+                    particle.style.animationDuration = `${20 + Math.random() * 40}s`;
                     particle.style.animationName = 'moveClouds';
                     particle.style.animationTimingFunction = 'linear';
                 }
@@ -264,23 +260,23 @@ ThemePark.features = {
              container.appendChild(moon);
         };
 
-        const createSun = () => { // 태양 생성 함수
+        const createSun = () => {
             const sun = document.createElement('div');
             sun.className = 'sun';
             container.appendChild(sun);
         };
 
-        const createRaindrop = () => { // 빗방울 생성
+        const createRaindrop = () => {
             const rain = document.createElement('div');
             rain.className = 'particle rain';
             rain.style.left = `${Math.random() * 100}vw`;
-            rain.style.animationDuration = `${1.0 + Math.random() * 0.8}s`; // 비 속도 느리게
+            rain.style.animationDuration = `${1.0 + Math.random() * 0.8}s`;
             rain.style.animationDelay = `${Math.random() * 2}s`;
             container.appendChild(rain);
             rain.addEventListener('animationend', () => rain.remove());
         };
 
-        const createSnowflake = () => { // 눈송이 생성
+        const createSnowflake = () => {
             const snow = document.createElement('div');
             snow.className = 'particle snow';
             snow.style.left = `${Math.random() * 100}vw`;
@@ -290,16 +286,15 @@ ThemePark.features = {
             snow.addEventListener('animationend', () => snow.remove());
         };
 
-        const createLightning = () => { // 천둥 번개 효과 (번개 이미지를 사용하거나 CSS로 그릴 수 있음)
+        const createLightning = () => {
             const lightning = document.createElement('div');
             lightning.className = 'lightning';
             lightning.style.left = `${Math.random() * 80 + 10}vw`;
             lightning.style.top = `${Math.random() * 50}vh`;
             container.appendChild(lightning);
-            setTimeout(() => lightning.remove(), 500); // 0.5초 후 사라짐
+            setTimeout(() => lightning.remove(), 500);
         };
         
-        // 수정된 불꽃놀이 효과 생성 함수
         const createFirecracker = () => {
             const firecracker = document.createElement('div');
             firecracker.className = 'firecracker';
@@ -307,7 +302,6 @@ ThemePark.features = {
             firecracker.style.left = `${startX}vw`;
             
             firecracker.addEventListener('animationend', () => {
-                // 폭죽이 터질 위치를 잡는다.
                 const burstContainer = document.createElement('div');
                 burstContainer.className = 'burst';
                 burstContainer.style.position = 'absolute';
@@ -316,53 +310,47 @@ ThemePark.features = {
                 container.appendChild(burstContainer);
 
                 const hue = Math.random() * 360;
-                // 작은 파편들을 생성한다.
-                for (let i = 0; i < 30; i++) { // 파편 수 증가
+                for (let i = 0; i < 30; i++) {
                     const particle = document.createElement('div');
                     particle.className = 'particle';
                     const angle = Math.random() * 360;
-                    const distance = Math.random() * 70 + 30; // 흩어지는 거리 증가
+                    const distance = Math.random() * 70 + 30;
                     particle.style.background = `hsl(${hue + (Math.random() * 30 - 15)}, 100%, 70%)`;
                     particle.style.transform = `rotate(${angle}deg) translateX(${distance}px) scale(0.1)`;
                     burstContainer.appendChild(particle);
                 }
-                // 일정 시간 후 폭발 컨테이너를 제거한다.
-                setTimeout(() => burstContainer.remove(), 1200); // 사라지는 시간 증가
+                setTimeout(() => burstContainer.remove(), 1200);
                 firecracker.remove();
             });
             container.appendChild(firecracker);
         };
 
-        const createShootingStar = () => { // 별똥별 생성
+        const createShootingStar = () => {
             const shootingStar = document.createElement('div');
             shootingStar.className = 'particle shooting-star';
             shootingStar.style.left = `${Math.random() * 80}vw`;
             shootingStar.style.top = `-${Math.random() * 20}vh`;
-            shootingStar.style.animationDuration = `${1.0 + Math.random() * 0.5}s`; // 떨어지는 시간 단축
-            shootingStar.style.animationDelay = `${Math.random() * 3}s`; // 더 자주 나타나도록
+            shootingStar.style.animationDuration = `${1.0 + Math.random() * 0.5}s`;
+            shootingStar.style.animationDelay = `${Math.random() * 3}s`;
             container.appendChild(shootingStar);
             shootingStar.addEventListener('animationend', () => shootingStar.remove());
         };
 
-        const createMeteor = () => { // 메테오 생성
+        const createMeteor = () => {
             const meteor = document.createElement('div');
             meteor.className = 'particle meteor';
-            meteor.style.left = `${Math.random() * 60}vw`; // 왼쪽 상단에서 시작
+            meteor.style.left = `${Math.random() * 60}vw`;
             meteor.style.top = `-${Math.random() * 30}vh`;
-            meteor.style.animationDuration = `${2 + Math.random() * 1}s`; // 떨어지는 시간 단축
-            meteor.style.animationDelay = `${Math.random() * 5}s`; // 더 자주 나타나도록
+            meteor.style.animationDuration = `${2 + Math.random() * 1}s`;
+            meteor.style.animationDelay = `${Math.random() * 5}s`;
             container.appendChild(meteor);
             meteor.addEventListener('animationend', () => meteor.remove());
         };
 
-
-        // 라디오 버튼 기반 효과
         if (settings.lightEffect === 'moon') createMoon();
         if (settings.lightEffect === 'sun') createSun();
 
-        // 환경 효과
         if (settings.environmentEffect === 'rural') {
-            // 시골 배경 요소 (풀, 가로등)
             for(let i=0; i<10; i++) {
                 const grass = document.createElement('div');
                 grass.className = 'env-grass';
@@ -370,7 +358,7 @@ ThemePark.features = {
                 grass.style.animationDelay = `${Math.random() * 10}s`;
                 container.appendChild(grass);
 
-                if (Math.random() < 0.2) { // 낮은 확률로 가로등
+                if (Math.random() < 0.2) {
                     const streetlight = document.createElement('div');
                     streetlight.className = 'env-streetlight';
                     streetlight.style.left = `${Math.random() * 100}vw`;
@@ -379,33 +367,26 @@ ThemePark.features = {
                 }
             }
         } else if (settings.environmentEffect === 'city') {
-            // 도시 배경 요소 (건물, 불빛, 도로)
             for(let i=0; i<15; i++) {
                 const building = document.createElement('div');
                 building.className = 'env-building';
                 building.style.left = `${Math.random() * 100}vw`;
                 building.style.animationDelay = `${Math.random() * 10}s`;
-                // 건물 높이 랜덤 변수 설정 (CSS var를 통해 제어)
                 building.style.setProperty('--random-height', Math.random());
-                // 건물 초기 위치 랜덤 변수 설정
                 building.style.setProperty('--random-offset', Math.random()); 
                 container.appendChild(building);
 
-                // 건물 불빛 (건물 내부에 위치하도록 조정)
                 if (Math.random() < 0.3) {
                     const windowLight = document.createElement('div');
                     windowLight.className = 'env-window-light';
-                    // 불빛이 건물 내부에 위치하도록 left와 bottom을 건물 기준으로 설정
-                    // left는 건물의 상대적인 위치를 기준으로, top은 건물 높이에 비례하여 설정
-                    windowLight.style.left = `calc(${Math.random() * 80 + 10}% - 1vw)`; // 건물 폭 내에서 랜덤
-                    windowLight.style.bottom = `calc(${Math.random() * 70 + 5}%)`; // 건물 높이 내에서 랜덤
+                    windowLight.style.left = `calc(${Math.random() * 80 + 10}% - 1vw)`;
+                    windowLight.style.bottom = `calc(${Math.random() * 70 + 5}%)`;
                     windowLight.style.animationDelay = `${Math.random() * 8}s`;
-                    // windowLight 자체의 이동 애니메이션을 건물과 동기화
                     windowLight.style.animationName = 'moveCity'; 
-                    windowLight.style.animationDuration = building.style.animationDuration; // 건물과 같은 속도로
+                    windowLight.style.animationDuration = building.style.animationDuration;
                     windowLight.style.animationTimingFunction = 'linear';
                     windowLight.style.animationIterationCount = 'infinite';
-                    building.appendChild(windowLight); // 불빛을 건물 내부에 추가
+                    building.appendChild(windowLight);
                 }
             }
             const road = document.createElement('div');
@@ -413,12 +394,10 @@ ThemePark.features = {
             container.appendChild(road);
         }
 
-        // 공통 구름 효과
         if (settings.environmentEffect !== 'none') {
             createParticles(5, 'cloud');
         }
 
-        // 체크박스 기반 파티클 효과
         if (settings.particleStars) createParticles(200, 'star', {size: 3});
         if (settings.particleFireflies) createParticles(20, 'firefly', {baseDuration: 6, durationVariation: 4});
         if (settings.particleSakura) createParticles(50, 'sakura', { baseDuration: 8, durationVariation: 5 });
@@ -428,7 +407,6 @@ ThemePark.features = {
         if (settings.particleBubbles) createParticles(30, 'bubble', { baseDuration: 10, durationVariation: 8, size: 20 });
         if (settings.particleMeteors) ThemePark.state.backgroundEffectInterval = setInterval(createMeteor, 3000 + Math.random() * 3000);
 
-        // 날씨 효과
         if (settings.weatherEffect === 'snow') {
             ThemePark.state.backgroundEffectInterval = setInterval(createSnowflake, 300);
         } else if (settings.weatherEffect === 'rain') {
@@ -440,7 +418,6 @@ ThemePark.features = {
             }, 100);
         }
 
-        // body의 배경을 투명하게 만들어 아래의 효과 컨테이너가 보이게 한다.
         const css = `
             body, .bg-gray-main { background: transparent !important; }
             #theme-park-background-effects { background-color: ${bgColor}; }
@@ -468,7 +445,6 @@ ThemePark.features = {
         chrome.storage.local.get('customThemeSettings', (data) => {
             const settings = data.customThemeSettings || ThemePark.config.defaultCustomSettings;
             const jsonString = JSON.stringify(settings);
-            // 한글 등 멀티바이트 문자를 안전하게 인코딩한다.
             const base64String = btoa(unescape(encodeURIComponent(jsonString)));
             navigator.clipboard.writeText(base64String)
                 .then(() => ThemePark.ui.showDynamicToast({title: '클립보드에 복사됨!', details: '테마 코드가 복사되었습니다.', icon: '📋'}))
@@ -481,13 +457,10 @@ ThemePark.features = {
         const code = prompt('가져올 테마 코드를 붙여넣어 주세요:');
         if (!code) return;
         try {
-            // 인코딩된 코드를 디코딩하여 JSON으로 파싱한다.
             const jsonString = decodeURIComponent(escape(atob(code)));
             const newSettings = JSON.parse(jsonString);
-            // 코드 형식이 유효한지 간단히 검사한다.
             if (!newSettings.mainBgColor) throw new Error('유효하지 않은 코드 형식');
             
-            // 되돌리기를 위해 이전 설정을 저장해둔다.
             chrome.storage.local.get('customThemeSettings', (data) => {
                 ThemePark.state.previousCustomThemeSettings = data.customThemeSettings || { ...ThemePark.config.defaultCustomSettings };
             });
@@ -527,7 +500,6 @@ ThemePark.features = {
         const { length, include, exclude, worldDescription, characterName } = context;
         let prompt = '';
 
-        // 캐릭터와 세계관 설명을 함께 고려하여 프롬프트 강화
         const commonContext = `
             ${worldDescription ? `**세계관:**\n${worldDescription}\n` : ''}
             ${characterName ? `**캐릭터 이름:** ${characterName}\n` : ''}
@@ -543,14 +515,14 @@ ThemePark.features = {
         const lengthModifier = getLengthModifier(length);
 
         switch (actionType) {
-            case 'generate_world_by_keyword': // 새로운 세계관 생성 액션
-                prompt = `당신은 시나리오 전문가입니다. 사용자의 키워드와 제공된 캐릭터 정보를 바탕으로 대화형 스토리를 위한 상세한 배경 시나리오를 YAML 형식으로 재작성해주세요. 키는 '시점', '장르', '분위기', '배경', '주요_갈등'을 사용하세요.
+            case 'generate_world_by_keyword':
+                prompt = `당신은 시나리오 전문가입니다. 다음 정보를 바탕으로 대화형 스토리를 위한 상세한 배경 시나리오를 YAML 형식으로 재작성해주세요. 키는 '시점', '장르', '분위기', '배경', '주요_갈등'을 사용하세요.
                 ${commonContext}
                 사용자 원본 텍스트에 포함된 키워드를 활용하고, 이를 확장하여 상세한 세계관을 구축해주세요.
                 ${lengthModifier ? `**분량 지침:** ${lengthModifier}` : ''}`;
                 break;
-            case 'generate_profile_by_keyword': // 새로운 프로필 생성 액션
-                prompt = `당신은 캐릭터 프롬프트 전문가입니다. 사용자의 키워드와 제공된 세계관 정보를 바탕으로 상세한 캐릭터 프로필을 YAML 형식으로 재작성해주세요. 다음 키만 포함하세요: 'name', 'appearance', 'personality', 'speech_style', 'relationship_with_user'. 이름은 한국어로 생성해야 합니다.
+            case 'generate_profile_by_keyword':
+                prompt = `당신은 캐릭터 프롬프트 전문가입니다. 다음 정보를 바탕으로 상세한 캐릭터 프로필을 YAML 형식으로 재작성해주세요. 다음 키만 포함하세요: 'name', 'appearance', 'personality', 'speech_style', 'relationship_with_user'. 이름은 한국어로 생성해야 합니다.
                 ${commonContext}
                 사용자 원본 텍스트에 포함된 키워드를 활용하고, 이를 확장하여 상세한 캐릭터 프로필을 구축해주세요.
                 ${lengthModifier ? `**분량 지침:** ${lengthModifier}` : ''}`;
@@ -573,7 +545,6 @@ ThemePark.features = {
 
     // 캐릭터 수정 페이지에 AI 보조 버튼들을 주입하는 함수다.
     injectPromptButtons() {
-        // AI 도우미 드롭다운 메뉴를 생성하는 헬퍼 함수 (세계관, 키워드 생성용)
         const createDropdownMenu = (textarea, type) => {
             const wrapper = document.createElement('div');
             wrapper.className = 'prompt-btn-wrapper'; 
@@ -587,11 +558,11 @@ ThemePark.features = {
             dropdownContent.className = 'prompt-dropdown-content';
 
             let actions = [];
-            if (type === 'description') { // 세계관 상세 설명
+            if (type === 'description') {
                 actions = [
                     { text: '키워드로 세계관 자동 생성', action: 'generate_world_by_keyword' },
                 ];
-            } else if (type === 'character') { // 캐릭터 설명
+            } else if (type === 'character') {
                 actions = [
                     { text: '키워드로 프로필 자동 생성', action: 'generate_profile_by_keyword' },
                 ];
@@ -642,10 +613,8 @@ ThemePark.features = {
         };
 
         const addImageProfileButton = (charSectionNode) => {
-             // 이미 버튼이 있으면 추가하지 않는다.
             if (charSectionNode.querySelector('.tp-img-profile-btn')) return;
 
-            // 캐릭터 프로필 이미지를 감싸는 버튼을 찾는다.
             const imgButton = charSectionNode.querySelector('button.relative');
             if (imgButton) {
                 const newBtn = document.createElement('button');
@@ -660,23 +629,18 @@ ThemePark.features = {
                         return;
                     }
                     try {
-                        // API 호출 전, 전체 세계관 정보를 가져온다.
                         const worldDescriptionTextarea = document.querySelector('textarea[name="longDescription"]');
                         const worldDescription = worldDescriptionTextarea ? worldDescriptionTextarea.value.trim() : '';
 
-                        // API를 호출하여 프로필 텍스트를 받아온다.
                         let profileYaml = await ThemePark.api.generateProfileWithGemini(img.src, worldDescription);
                         
-                        // 현재 캐릭터 섹션에 해당하는 이름과 설명 textarea를 찾는다.
                         const nameInput = charSectionNode.querySelector('input[name*="name"]');
                         const descriptionTextarea = charSectionNode.querySelector('textarea[name*="description"]');
                         const existingName = nameInput ? nameInput.value.trim() : '';
 
-                        // 이름 입력칸에 이미 값이 있다면, AI가 생성한 이름을 덮어쓴다.
                         if (existingName) {
                             profileYaml = profileYaml.replace(/name:\s*["']?.*["']?/, `name: "${existingName}"`);
                         } else {
-                            // 값이 없다면, AI가 생성한 이름을 이름 입력칸에 넣어준다.
                             const nameMatch = profileYaml.match(/name:\s*["']?([^"'\n]+)["']?/);
                             if (nameInput && nameMatch && nameMatch[1]) {
                                 nameInput.value = nameMatch[1];
@@ -695,28 +659,24 @@ ThemePark.features = {
                     }
                 };
                 
-                // 이미지 버튼 아래에 새로운 버튼을 추가한다.
                 imgButton.parentElement.insertBefore(newBtn, imgButton.nextSibling);
             }
         };
 
         const addWizardButton = (targetNode) => {
-            // 생성 마법사 버튼은 세계관 상세 설명 섹션에만 추가
             const h3 = targetNode.querySelector('h3.body14');
             if (h3?.textContent.trim() === '상세 설명' && !targetNode.querySelector('.tp-wizard-btn')) {
                 const wizardBtn = document.createElement('button');
                 wizardBtn.type = 'button';
-                wizardBtn.className = 'tp-wizard-btn small-btn'; // 작은 버튼 스타일 유지
+                wizardBtn.className = 'tp-wizard-btn small-btn'; 
                 wizardBtn.innerHTML = '✨ 생성 마법사';
 
                 wizardBtn.onclick = () => {
-                    ThemePark.ui.showGeneratorWizardModal(); // 생성 마법사 모달 열기
+                    ThemePark.ui.showGeneratorWizardModal(); 
                 };
 
-                // 기존 '키워드로 AI 생성' 드롭다운 버튼 옆에 추가되도록 위치 조정
                 const promptBtnWrapper = targetNode.querySelector('.prompt-btn-wrapper');
                 if (promptBtnWrapper) {
-                    // prompt-btn-wrapper의 자식으로 추가하여 flex 컨테이너에 포함시키고, height를 50% 줄임
                     wizardBtn.style.height = '50%'; 
                     promptBtnWrapper.appendChild(wizardBtn);
                 } else {
@@ -726,41 +686,34 @@ ThemePark.features = {
         };
 
         const observeAndApply = () => {
-             // '상세 설명' (세계관) 섹션에 드롭다운 메뉴와 생성 마법사 버튼을 적용한다.
             document.querySelectorAll('form section.flex.flex-col.gap-2').forEach(sectionNode => {
                 const h3 = sectionNode.querySelector('h3.body14');
                 const textarea = sectionNode.querySelector('textarea');
                 
-                if (h3?.textContent.trim() === '상세 설명' && textarea && !sectionNode.querySelector('.prompt-btn-main')) { // Check for .prompt-btn-main to avoid re-injecting dropdown
-                    const wrapper = createDropdownMenu(textarea, 'description'); // 'description' 타입
+                if (h3?.textContent.trim() === '상세 설명' && textarea && !sectionNode.querySelector('.prompt-btn-main')) { 
+                    const wrapper = createDropdownMenu(textarea, 'description');
                     h3.parentElement.insertBefore(wrapper, h3.nextSibling);
                 }
-                // 생성 마법사 버튼 추가
                 addWizardButton(sectionNode);
             });
             
-            // 각 캐릭터 카드 섹션 (캐릭터 설명)에 버튼을 적용한다.
             document.querySelectorAll('div.flex.flex-col.gap-3 > div.flex.flex-col.gap-6').forEach(charSectionNode => {
                 const h3 = charSectionNode.querySelector('h3.body14');
-                const textarea = charSectionNode.querySelector('textarea[name*="description"]'); // 캐릭터 설명 textarea
+                const textarea = charSectionNode.querySelector('textarea[name*="description"]');
                 
-                // '이미지로 프로필 자동 생성' 버튼 추가
                 addImageProfileButton(charSectionNode);
 
-                // '키워드로 프로필 자동 생성' 버튼 및 '되돌리기' 버튼을 포함한 드롭다운 메뉴 추가
-                if (h3?.textContent.trim() === '설명' && textarea && !charSectionNode.querySelector('.prompt-btn-main')) { // Check for .prompt-btn-main to avoid re-injecting dropdown
-                    const wrapper = createDropdownMenu(textarea, 'character'); // 'character' 타입
+                if (h3?.textContent.trim() === '설명' && textarea && !charSectionNode.querySelector('.prompt-btn-main')) {
+                    const wrapper = createDropdownMenu(textarea, 'character');
                     h3.parentElement.insertBefore(wrapper, h3.nextSibling);
                 }
             });
         };
         
-        observeAndApply(); // 페이지 초기 로드 시 한 번 실행한다.
+        observeAndApply();
 
         if (ThemePark.state.pageObserver) ThemePark.state.pageObserver.disconnect();
-        // 페이지에 동적으로 추가되는 노드를 감지하여 버튼을 주입한다.
         ThemePark.state.pageObserver = new MutationObserver((mutations) => {
-            // Check for specific nodes that indicate a new section or the form is ready
             const formReady = document.querySelector('form');
             const targetNodesChanged = mutations.some(mutation => 
                 mutation.addedNodes.length > 0 && Array.from(mutation.addedNodes).some(node => 
@@ -794,7 +747,7 @@ ThemePark.features = {
             
             ThemePark.ui.showDynamicToast({title: `'${characterName}' 자동 저장됨`, icon: '💾', duration: 2000});
             ThemePark.ui.populateAutoSaveList();
-        }, 30000); // 30초마다 저장
+        }, 30000); 
     },
     
     // 저장된 데이터를 폼에 복원하는 함수다.
@@ -805,10 +758,480 @@ ThemePark.features = {
             const element = form.querySelector(`[name="${key}"]`);
             if (element) {
                 element.value = data[key];
-                // input 이벤트를 발생시켜 React 같은 프레임워크가 변경을 감지하게 한다.
                 element.dispatchEvent(new Event('input', { bubbles: true }));
             }
         }
         ThemePark.ui.showDynamicToast({title: '저장된 내용을 복원했습니다.', icon: '✅'});
     },
+
+    /**
+     * 랭킹 데이터를 가져와 모달에 표시하는 함수다.
+     * @param {object} comparisonInfo - 비교할 과거 데이터 { data: Array, timestamp: string }
+     */
+    async fetchAndDisplayRankings(comparisonInfo = null) {
+        console.log("[ThemePark] 랭킹 데이터 불러오기 시작...");
+        ThemePark.ui.showDynamicToast({ title: '랭킹 데이터 불러오는 중...', icon: '📈', isProgress: true });
+        try {
+            console.log("[ThemePark] DOM에서 기본 캐릭터 정보 추출 중...");
+            const basicCharacters = this._extractBasicCharacterDataFromDOM();
+            console.log("[ThemePark] 추출된 기본 캐릭터:", basicCharacters);
+            
+            console.log("[ThemePark] 각 캐릭터의 상세 데이터 API 호출 중...");
+            const detailedCharacterPromises = basicCharacters.map(async (basicChar) => {
+                if (!basicChar.id) {
+                    console.warn('[ThemePark] plotId가 없는 캐릭터가 발견되었습니다. 건너뜁니다:', basicChar);
+                    return null;
+                }
+                try {
+                    const detailedData = await ThemePark.api.getPlotData(basicChar.id);
+                    return {
+                        ...basicChar,
+                        interactionCountWithRegen: detailedData.interactionCountWithRegen || 0,
+                        hashtags: detailedData.hashtags || [],
+                        createdAt: detailedData.createdAt
+                    };
+                } catch (apiError) {
+                    console.error(`[ThemePark] plot ID ${basicChar.id}에 대한 상세 데이터 가져오기 실패:`, apiError);
+                    return null;
+                }
+            });
+
+            const charactersWithDetails = (await Promise.all(detailedCharacterPromises)).filter(char => char !== null);
+            console.log("[ThemePark] API 호출 후 상세 정보가 포함된 캐릭터:", charactersWithDetails);
+            
+            console.log("[ThemePark] 캐릭터 데이터 그룹화 및 처리 중...");
+            const processedRankings = this._groupAndProcessCharacters(charactersWithDetails);
+            console.log("[ThemePark] 최종 처리된 랭킹 데이터:", processedRankings);
+            
+            const { favoriteCreators = [] } = await chrome.storage.sync.get('favoriteCreators');
+            ThemePark.state.favoriteCreators = new Set(favoriteCreators);
+            console.log("[ThemePark] 즐겨찾는 제작자 로드됨:", ThemePark.state.favoriteCreators);
+
+            const { rankingModalSettings } = await chrome.storage.sync.get('rankingModalSettings');
+            ThemePark.state.rankingModalSettings = { 
+                width: 70, 
+                height: 90, 
+                autoSaveInterval: '10', 
+                ...rankingModalSettings 
+            };
+            console.log("[ThemePark] 랭킹 모달 설정 로드됨:", ThemePark.state.rankingModalSettings);
+
+            ThemePark.ui.showRankingModal(processedRankings, comparisonInfo);
+            ThemePark.ui.showDynamicToast({ title: '랭킹 불러오기 완료!', icon: '✅' });
+            console.log("[ThemePark] 랭킹 불러오기 완료. 모달 표시됨.");
+
+            this.startRankingAutoSave();
+            this.startAutoSaveCountdown();
+
+            if (!comparisonInfo) {
+                this.addRankingHistory(charactersWithDetails);
+                console.log("[ThemePark] 현재 랭킹 데이터 자동 저장 기록에 추가됨.");
+            }
+
+        } catch (error) {
+            console.error("[ThemePark] 랭킹 불러오기 및 표시 실패:", error);
+            ThemePark.ui.showDynamicToast({ title: '랭킹 불러오기 실패', details: error.message, icon: '❌', duration: 5000 });
+        }
+    },
+    /**
+     * Zeta AI 사이트의 DOM에서 기본적인 캐릭터 데이터 (ID, 이름, 이미지 URL, 제작자 정보)를 추출하는 내부 함수다.
+     * 새로운 HTML 구조에 맞게 셀렉터를 수정합니다.
+     * @private
+     * @returns {Array<object>} 기본 정보가 포함된 캐릭터 데이터 배열
+     */
+    _extractBasicCharacterDataFromDOM() {
+        console.log("[ThemePark] _extractBasicCharacterDataFromDOM 시작...");
+        const basicCharacters = [];
+        
+        // Zeta AI 페이지의 메인 콘텐츠 영역을 지정합니다.
+        // 이 셀렉터는 페이지 전체 콘텐츠를 감싸는 가장 바깥쪽 컨테이너입니다.
+        const mainContentArea = document.querySelector('div.flex.min-h-0.flex-col.overflow-y-auto.px-4.pt-8');
+        if (!mainContentArea) {
+            console.warn("[ThemePark] 메인 콘텐츠 영역 (div.flex.min-h-0.flex-col.overflow-y-auto.px-4.pt-8)을 찾을 수 없습니다. DOM 구조가 변경되었을 수 있습니다.");
+            return [];
+        }
+
+        // 이제 각 랭킹 섹션 (예: '실시간 TOP 10 캐릭터', '갓 출시된 따끈따끈한 캐릭터들')을 찾습니다.
+        // 이 섹션들은 `mainContentArea` 내부의 `div.flex.flex-col` 바로 아래에 있는
+        // `div.flex.w-full.min-w-0.flex-col[data-index]` 요소들입니다.
+        const topLevelSections = Array.from(mainContentArea.querySelectorAll(':scope > div.flex.flex-col > div.flex.w-full.min-w-0.flex-col[data-index]'));
+        console.log(`[ThemePark] 최상위 섹션 ${topLevelSections.length}개 발견됨.`, topLevelSections);
+
+
+        topLevelSections.forEach(topSection => {
+            // 섹션 제목을 추출합니다. (예: '⚠️ [시스템] 퀘스트가 도착했습니다!', '실시간 TOP 10 캐릭터')
+            const sectionTitleElement = topSection.querySelector('h2.title20');
+            const sectionTitle = sectionTitleElement ? sectionTitleElement.textContent.trim().replace('⚠️ [시스템] 퀘스트가 도착했습니다!', '전체 인기 랭킹 (퀘스트)') : '알 수 없는 섹션';
+
+            // 각 섹션 내에서 개별 캐릭터 카드 요소들을 찾습니다.
+            // Swiper 컴포넌트 내부에 `.swiper-slide`가 있고 그 안에 `.group/item`이 있습니다.
+            const characterElements = topSection.querySelectorAll(
+                '.swiper-slide .group\\/item.flex.flex-col.w-\\[148px\\].mr-3.min-h-\\[268px\\].shrink-0, ' +
+                '.swiper-slide .group\\/item.flex.flex-col.gap-3.w-\\[156px\\].mr-2.min-h-\\[241px\\].shrink-0'
+            );
+
+            console.log(`[ThemePark] DOM 추출: 섹션 '${sectionTitle}'에서 ${characterElements.length}개의 캐릭터 요소 발견.`);
+
+            characterElements.forEach((charElement, index) => {
+                const linkElement = charElement.querySelector('a[href*="/plots/"]');
+                const nameElement = charElement.querySelector('a[href*="/plots/"] .title16.line-clamp-1');
+                
+                // 제작자 요소는 `a[href*="/creators/"]`를 통해 찾습니다.
+                const creatorElement = charElement.querySelector('a[href*="/creators/"]');
+
+                // 이미지 요소는 alt 속성에 따라 또는 일반 img 태그로 찾습니다.
+                const imageUrlElement = charElement.querySelector('img[alt*="의 "], img[alt^="profile-image"], img'); 
+
+                // 디버깅을 위해 각 요소의 찾기 성공 여부와 값을 상세히 로그 출력
+                console.log(`  [Char ${index} - Section: ${sectionTitle}]`);
+                console.log(`    linkElement: ${linkElement ? linkElement.outerHTML : '없음'}`);
+                console.log(`    nameElement: ${nameElement ? nameElement.outerHTML : '없음'}`);
+                console.log(`    creatorElement: ${creatorElement ? creatorElement.outerHTML : '없음'}`);
+                console.log(`    imageUrlElement: ${imageUrlElement ? imageUrlElement.outerHTML : '없음'}`);
+
+
+                // 최소한 plotId (linkElement.href)와 name (nameElement.textContent)은 있어야 유효한 캐릭터로 간주합니다.
+                // creatorElement와 imageUrlElement는 없을 수도 있으므로, 이들이 없어도 캐릭터를 추가하도록 로직을 변경합니다.
+                if (linkElement && nameElement && linkElement.href && nameElement.textContent) {
+                    const plotIdMatch = linkElement.href.match(/\/plots\/([a-f0-9-]+)\/profile/);
+                    const plotId = plotIdMatch ? plotIdMatch[1] : null;
+
+                    // creatorElement와 imageUrlElement가 없을 경우를 대비하여 기본값 설정
+                    const creatorId = creatorElement && creatorElement.href ? (creatorElement.href.match(/\/creators\/([a-f0-9-]+)\/profile/) ? creatorElement.href.match(/\/creators\/([a-f0-9-]+)\/profile/)[1] : null) : null;
+                    const creatorNickname = creatorElement && creatorElement.textContent ? creatorElement.textContent.trim().replace('@', '') : '알 수 없음';
+                    const imageUrl = imageUrlElement && imageUrlElement.src ? imageUrlElement.src : '';
+
+
+                    if (plotId) { // plotId만 유효하면 캐릭터 데이터로 포함
+                        basicCharacters.push({
+                            id: plotId,
+                            name: nameElement.textContent.trim(),
+                            imageUrl: imageUrl,
+                            creator: {
+                                id: creatorId,
+                                nickname: creatorNickname
+                            },
+                            sectionTitle: sectionTitle // 어떤 섹션에서 가져온 데이터인지 기록
+                        });
+                        console.log(`[ThemePark] DOM 추출: 캐릭터 추가됨 - ID: ${plotId}, 이름: ${nameElement.textContent.trim()}, 섹션: ${sectionTitle}`);
+                    } else {
+                         console.warn(`[ThemePark] DOM 추출: plotId를 찾을 수 없어 캐릭터 건너뜁니다.`, { element: charElement.outerHTML });
+                    }
+                } else {
+                    console.warn('[ThemePark] DOM 추출: 필수 요소(링크 또는 이름) 누락으로 캐릭터 건너뜁니다.', {
+                        element: charElement.outerHTML,
+                        hasLink: !!linkElement,
+                        hasName: !!nameElement,
+                        hasCreatorElement: !!creatorElement, // 디버깅용으로 추가
+                        hasImageUrlElement: !!imageUrlElement && !!imageUrlElement.src // 디버깅용으로 추가
+                    });
+                }
+            });
+        });
+        console.log("[ThemePark] _extractBasicCharacterDataFromDOM 종료. 총 추출된 캐릭터 수:", basicCharacters.length);
+        return basicCharacters;
+    },
+
+    /**
+     * API에서 가져온 상세 캐릭터 데이터를 그룹화하여 모달에 표시할 구조로 만듭니다.
+     * @param {Array<object>} characters - ThemePark.api.getPlotData로부터 가져온 상세 캐릭터 JSON 데이터 배열
+     * @returns {Array<object>} 그룹화된 랭킹 섹션 배열
+     */
+    _groupAndProcessCharacters(characters) {
+        console.log("[ThemePark] _groupAndProcessCharacters 함수 실행...");
+        const processedGroups = [];
+        ThemePark.state.creatorMap.clear(); // 기존 맵 초기화
+        
+        // 모든 제작자 닉네임을 다시 캐싱
+        characters.forEach(char => {
+            if (char.creator && char.creator.id && char.creator.nickname) {
+                ThemePark.state.creatorMap.set(char.creator.id, char.creator.nickname);
+            }
+        });
+        console.log("[ThemePark] 제작자 맵 업데이트됨:", ThemePark.state.creatorMap);
+
+        // 섹션 제목별로 캐릭터를 그룹화합니다.
+        const groupedBySection = characters.reduce((acc, char) => {
+            const title = char.sectionTitle || '기타';
+            if (!acc[title]) {
+                acc[title] = [];
+            }
+            acc[title].push(char);
+            return acc;
+        }, {});
+
+        // 최신 HTML에서 확인된 섹션 제목들을 정확하게 반영
+        const sectionOrder = [
+            '전체 인기 랭킹 (퀘스트)', // ⚠️ [시스템] 퀘스트가 도착했습니다! -> 이 제목으로 변경되어 들어올 것으로 예상
+            '실시간 TOP 10 캐릭터',
+            '오늘만큼은 나도 알파메일',
+            '이제 막 주목받기 시작한 캐릭터들', 
+            '현실파괴 이세계 로맨스',
+            '내 맘을 훔쳐간 유죄남 모음.zip',
+            '제타에서는 나도 웹소 주인공'
+        ];
+
+        // 명확한 섹션 순서대로 추가
+        sectionOrder.forEach(title => {
+            if (groupedBySection[title] && groupedBySection[title].length > 0) {
+                processedGroups.push({
+                    title: title,
+                    characters: groupedBySection[title].sort((a, b) => b.interactionCountWithRegen - a.interactionCountWithRegen),
+                    isRankingSection: title === '실시간 TOP 10 캐릭터' || title === '전체 인기 랭킹 (퀘스트)'
+                });
+                console.log(`[ThemePark] 그룹 '${title}' 생성됨. 캐릭터 수: ${groupedBySection[title].length}`);
+            }
+        });
+
+        // 위에서 처리되지 않은 기타 섹션 추가 (만약 있다면)
+        for (const title in groupedBySection) {
+            if (!sectionOrder.includes(title)) { // `sectionOrder`에 직접 포함되지 않은 섹션만 추가
+                processedGroups.push({
+                    title: title,
+                    characters: groupedBySection[title],
+                    isRankingSection: false
+                });
+                console.log(`[ThemePark] 미분류 그룹 '${title}' 추가됨. 캐릭터 수: ${groupedBySection[title].length}`);
+            }
+        }
+        
+        console.log("[ThemePark] _groupAndProcessCharacters 함수 종료. 결과:", processedGroups);
+        return processedGroups;
+    },
+
+    /**
+     * 즐겨찾는 제작자를 추가/제거하고 저장한다.
+     * @param {string} creatorId - 제작자 ID
+     */
+    async toggleFavoriteCreator(creatorId) {
+        console.log(`[ThemePark] 즐겨찾기 토글: ${creatorId}`);
+        const isFavorited = ThemePark.state.favoriteCreators.has(creatorId);
+        if (isFavorited) {
+            ThemePark.state.favoriteCreators.delete(creatorId);
+            ThemePark.ui.showDynamicToast({ title: '즐겨찾기 해제', details: `${ThemePark.state.creatorMap.get(creatorId) || creatorId} 님이 즐겨찾기에서 제거되었습니다.`, icon: '⭐' });
+        } else {
+            ThemePark.state.favoriteCreators.add(creatorId);
+            ThemePark.ui.showDynamicToast({ title: '즐겨찾기 추가', details: `${ThemePark.state.creatorMap.get(creatorId) || creatorId} 님이 즐겨찾기에 추가되었습니다.`, icon: '💖' });
+        }
+        await chrome.storage.sync.set({ favoriteCreators: Array.from(ThemePark.state.favoriteCreators) });
+        console.log("[ThemePark] 즐겨찾는 제작자 목록 업데이트됨:", ThemePark.state.favoriteCreators);
+        if (ThemePark.state.rankingModal) {
+            console.log("[ThemePark] 랭킹 모달이 열려있으므로 UI 업데이트 재실행...");
+            await this.fetchAndDisplayRankings();
+        }
+        ThemePark.ui.populateFavoritesList();
+        console.log("[ThemePark] 즐겨찾기 토글 작업 완료.");
+    },
+
+    /**
+     * 모든 즐겨찾는 제작자를 삭제한다.
+     */
+    async clearAllFavorites() {
+        console.log("[ThemePark] 모든 즐겨찾는 제작자 삭제 시도.");
+        if (confirm('정말로 모든 즐겨찾는 제작자를 삭제하시겠습니까?')) {
+            ThemePark.state.favoriteCreators.clear();
+            await chrome.storage.sync.set({ favoriteCreators: [] });
+            ThemePark.ui.populateFavoritesList();
+            ThemePark.ui.showDynamicToast({ title: '모든 즐겨찾기 삭제 완료', icon: '🗑️' });
+            console.log("[ThemePark] 모든 즐겨찾는 제작자 삭제 완료.");
+            if (ThemePark.state.rankingModal) {
+                console.log("[ThemePark] 랭킹 모달이 열려있으므로 UI 업데이트 재실행...");
+                await this.fetchAndDisplayRankings();
+            }
+        } else {
+            console.log("[ThemePark] 모든 즐겨찾는 제작자 삭제 취소.");
+        }
+    },
+
+    /**
+     * 현재 랭킹 데이터를 자동 저장 기록에 추가한다.
+     * @param {Array} currentRankingData - 현재 시점의 랭킹 데이터
+     */
+    async addRankingHistory(currentRankingData) {
+        console.log("[ThemePark] 랭킹 기록 추가 시도...");
+        const timestamp = new Date().toISOString();
+        const newRecord = { timestamp, data: currentRankingData };
+
+        ThemePark.state.rankingHistory.push(newRecord);
+        console.log("[ThemePark] 새 기록 추가됨:", newRecord);
+
+        const MAX_HISTORY = 50;
+        if (ThemePark.state.rankingHistory.length > MAX_HISTORY) {
+            ThemePark.state.rankingHistory = ThemePark.state.rankingHistory.slice(ThemePark.state.rankingHistory.length - MAX_HISTORY);
+            console.log(`[ThemePark] 기록이 ${MAX_HISTORY}개를 초과하여 오래된 기록이 삭제되었습니다.`);
+        }
+        await chrome.storage.local.set({ rankingHistory: ThemePark.state.rankingHistory });
+        console.log("[ThemePark] 랭킹 기록 저장 완료. 현재 기록 수:", ThemePark.state.rankingHistory.length);
+    },
+
+    /**
+     * 랭킹 자동 저장을 시작하거나 재설정한다.
+     */
+    async startRankingAutoSave() {
+        console.log("[ThemePark] 랭킹 자동 저장 시작/재설정 시도.");
+        clearInterval(ThemePark.state.rankingAutoSaveInterval);
+        const intervalMinutes = parseInt(ThemePark.state.rankingModalSettings.autoSaveInterval);
+
+        if (isNaN(intervalMinutes) || intervalMinutes <= 0) {
+            console.log('[ThemePark] 랭킹 자동 저장 비활성화됨.');
+            return;
+        }
+
+        const intervalMs = intervalMinutes * 60 * 1000;
+        console.log(`[ThemePark] 랭킹 자동 저장 시작. 주기: ${intervalMinutes}분 (${intervalMs}ms)`);
+
+        ThemePark.state.rankingAutoSaveInterval = setInterval(async () => {
+            console.log("[ThemePark] 자동 저장 주기 도달: 랭킹 데이터 불러오기 및 저장 시작.");
+            try {
+                const basicCharacters = this._extractBasicCharacterDataFromDOM();
+                const detailedCharacterPromises = basicCharacters.map(async (basicChar) => {
+                    if (!basicChar.id) return null;
+                    try {
+                        const detailedData = await ThemePark.api.getPlotData(basicChar.id);
+                        return {
+                            ...basicChar,
+                            interactionCountWithRegen: detailedData.interactionCountWithRegen || 0,
+                            hashtags: detailedData.hashtags || [],
+                            createdAt: detailedData.createdAt
+                        };
+                    } catch (apiError) {
+                        console.error(`[ThemePark] plot ID ${basicChar.id}에 대한 상세 데이터 가져오기 실패 (자동 저장 중):`, apiError);
+                        return null;
+                    }
+                });
+                const charactersWithDetails = (await Promise.all(detailedCharacterPromises)).filter(char => char !== null);
+                this.addRankingHistory(charactersWithDetails);
+                ThemePark.ui.showDynamicToast({ title: '랭킹 자동 저장 완료!', icon: '💾', duration: 2000 });
+                ThemePark.ui.populateAutoSaveHistory();
+                this.startAutoSaveCountdown();
+                console.log("[ThemePark] 자동 저장 주기 작업 완료.");
+            } catch (error) {
+                console.error('[ThemePark] 랭킹 자동 저장 중 오류 발생:', error);
+                ThemePark.ui.showDynamicToast({ title: '랭킹 자동 저장 실패', details: error.message, icon: '❌', duration: 3000 });
+            }
+        }, intervalMs);
+
+        this.startAutoSaveCountdown();
+    },
+
+    /**
+     * 랭킹 모달 내의 자동 저장 카운트다운을 시작한다.
+     */
+    startAutoSaveCountdown() {
+        console.log("[ThemePark] 자동 저장 카운트다운 시작.");
+        clearInterval(ThemePark.state.rankingCountdownInterval);
+        const intervalMinutes = parseInt(ThemePark.state.rankingModalSettings.autoSaveInterval);
+        const timerDisplay = document.getElementById('autosave-timer-display');
+
+        if (isNaN(intervalMinutes) || intervalMinutes <= 0) {
+            if (timerDisplay) timerDisplay.textContent = '비활성화';
+            console.log("[ThemePark] 자동 저장 카운트다운 비활성화됨.");
+            return;
+        }
+
+        let remainingSeconds = intervalMinutes * 60;
+
+        const updateDisplay = () => {
+            const minutes = Math.floor(remainingSeconds / 60);
+            const seconds = remainingSeconds % 60;
+            if (timerDisplay) {
+                timerDisplay.textContent = `${minutes}분 ${seconds < 10 ? '0' : ''}${seconds}초 남음`;
+            }
+        };
+
+        updateDisplay();
+
+        ThemePark.state.rankingCountdownInterval = setInterval(() => {
+            remainingSeconds--;
+            if (remainingSeconds < 0) {
+                remainingSeconds = intervalMinutes * 60;
+            }
+            updateDisplay();
+        }, 1000);
+        console.log("[ThemePark] 자동 저장 카운트다운 업데이트 시작됨.");
+    },
+    
+    /**
+     * 랭킹 기록을 백업한다 (JSON 파일로 저장).
+     * @param {Array} data - 백업할 랭킹 데이터
+     */
+    backupRankingData(data) {
+        console.log("[ThemePark] 랭킹 데이터 백업 시작.");
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `zeta_ranking_backup_${new Date().toISOString().slice(0,10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        ThemePark.ui.showDynamicToast({ title: '랭킹 데이터 백업 완료!', icon: '📥' });
+        console.log("[ThemePark] 랭킹 데이터 백업 완료.");
+    },
+
+    /**
+     * 백업 파일로부터 랭킹 데이터를 불러와 현재 랭킹과 비교한다.
+     */
+    restoreAndCompareData() {
+        console.log("[ThemePark] 랭킹 백업 파일 불러오기 및 비교 시작.");
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'application/json';
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                console.log("[ThemePark] 선택된 파일 없음. 파일 불러오기 취소.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const loadedData = JSON.parse(event.target.result);
+                    console.log("[ThemePark] 파일에서 불러온 데이터:", loadedData);
+                    
+                    let charactersToProcess = loadedData;
+                    if (Array.isArray(loadedData) && loadedData.length > 0 && loadedData[0].characters) {
+                         // 이미 그룹화된 형태라면, 모든 캐릭터를 평탄화 (flat)
+                        charactersToProcess = loadedData.flatMap(group => group.characters);
+                        console.log("[ThemePark] 불러온 데이터가 이미 그룹화되어 있어 평탄화됨:", charactersToProcess);
+                    } else if (!Array.isArray(loadedData)) {
+                        throw new Error('파일 형식이 올바르지 않습니다.');
+                    }
+                    
+                    ThemePark.ui.showDynamicToast({ title: '데이터 불러오기 완료!', details: '현재 랭킹과 비교합니다.', icon: '📊' });
+                    
+                    const comparisonInfo = {
+                        data: this._groupAndProcessCharacters(charactersToProcess),
+                        timestamp: file.lastModifiedDate.toISOString()
+                    };
+                    console.log("[ThemePark] 비교 데이터 준비 완료:", comparisonInfo);
+
+                    this.fetchAndDisplayRankings(comparisonInfo);
+                    console.log("[ThemePark] 랭킹 모달 비교 모드로 다시 로드됨.");
+
+                } catch (error) {
+                    console.error('[ThemePark] 랭킹 백업 파일을 불러오거나 파싱하는 중 오류 발생:', error);
+                    ThemePark.ui.showDynamicToast({ title: '파일 불러오기 실패', details: error.message, icon: '❌', duration: 5000 });
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    },
+
+    /**
+     * 특정 랭킹 기록을 삭제한다.
+     * @param {string} timestamp - 삭제할 기록의 타임스탬프
+     */
+    async deleteRankingHistory(timestamp) {
+        console.log(`[ThemePark] 랭킹 기록 삭제 시도: ${timestamp}`);
+        ThemePark.state.rankingHistory = ThemePark.state.rankingHistory.filter(item => item.timestamp !== timestamp);
+        await chrome.storage.local.set({ rankingHistory: ThemePark.state.rankingHistory });
+        ThemePark.ui.populateAutoSaveHistory();
+        ThemePark.ui.showDynamicToast({ title: '기록 삭제 완료', icon: '🗑️', duration: 2000 });
+        console.log(`[ThemePark] 랭킹 기록 삭제 완료: ${timestamp}`);
+    },
+
 };

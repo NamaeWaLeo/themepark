@@ -14,24 +14,34 @@ const ThemePark = {
 
     // 확장 프로그램의 모든 상태(State)를 관리하는 객체다.
     state: {
-        CURRENT_VERSION: "1.0 Beta 6", // 현재 버전 정보 (수정: 1.0 Beta 6)
-        // 동적으로 생성되는 스타일 시트의 참조를 저장한다.
+        CURRENT_VERSION: "1.0 Beta 7", 
         dynamicThemeStyleElement: null,
-        baseThemeStyleElement: null, // 공통 베이스 테마
+        baseThemeStyleElement: null,
         fontStyleElement: null,
         layoutStyleElement: null,
         eyeSaverStyleElement: null,
         backgroundEffectStyleElement: null,
         scrollbarStyleElement: null,
-        // pageObserver 및 profileObserver는 더 이상 필요 없음 (삭제)
-        // 주기적인 작업을 위한 타이머 ID를 저장한다.
         autoSaveInterval: null,
-        backgroundEffectInterval: null,
-        // 데이터 임시 저장을 위해 사용한다.
+        pageObserver: null,
+
+        // --- 랭킹 기능 관련 상태 ---
+        rankingModal: null,
+        rankingHistory: [],
+        favoriteCreators: new Set(),
+        creatorMap: new Map(), // 제작자 ID와 닉네임을 매핑
+        rankingAutoSaveInterval: null,
+        rankingCountdownInterval: null,
+        rankingModalSettings: {
+            width: 70, // 너비 조절 기능 부활 (기본 70%)
+            height: 90,
+            autoSaveInterval: '10'
+        },
+        // -------------------------
+
         originalPromptTexts: new WeakMap(),
         previousCustomThemeSettings: null,
-        apiCache: new Map(), // API 호출 결과를 캐싱하기 위한 Map
-        // 동적 UI 요소의 참조를 저장한다.
+        apiCache: new Map(),
         translatorModal: null,
     },
 

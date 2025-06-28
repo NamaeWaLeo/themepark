@@ -61,6 +61,91 @@ ThemePark.api = {
         }
     },
 
+     /**
+     * Gemini Vision API를 사용하여 이미지로부터 NovelAI 및 Stable Diffusion 스타일 태그를 생성한다.
+     * @param {string} imageUrl - 분석할 이미지의 URL
+     * @returns {Promise<object>} NovelAI 및 PixAI/Stable Diffusion 태그를 포함하는 JSON 객체
+     */
+    async generateTagsFromImage(imageUrl) {
+        // 이미지를 캐시에서 먼저 찾아본다.
+        if (ThemePark.state.apiCache.has(imageUrl + '_tags')) {
+            return ThemePark.state.apiCache.get(imageUrl + '_tags');
+        }
+
+        const { geminiApiKey } = await chrome.storage.sync.get('geminiApiKey');
+        if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
+        
+        // 이미지 URL에서 Blob 데이터를 가져온다.
+        const response = await fetch(imageUrl);
+        if (!response.ok) throw new Error(`이미지를 불러올 수 없습니다: ${response.statusText}`);
+        const blob = await response.blob();
+        
+        // Blob 데이터를 Base64로 변환한다.
+        const base64data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+
+        // Gemini API에 전달할 시스템 프롬프트 구성
+        const systemPrompt = `You are an expert AI for generating image tags for AI image generation models like NovelAI and Stable Diffusion (PixAI).
+Based on the provided image, output a JSON object containing character-focused and non-character (background/style) tags for both NovelAI and PixAI/Stable Diffusion styles.
+
+**Instructions:**
+1.  Analyze the image in detail.
+2.  For NovelAI tags:
+    * 'character': Focus on character's appearance, clothing, pose, expression. Be very descriptive and capture the character's key points.
+    * 'non_character': Focus on background, environment, lighting, artistic style, quality tags.
+3.  For PixAI/Stable Diffusion tags:
+    * 'character': Similar to NovelAI, but also include common quality tags like "masterpiece, best quality, ultra detailed". Capture the character's key points thoroughly.
+    * 'non_character': Similar to NovelAI, but also include common quality tags for environment and style.
+4.  Ensure all tags are comma-separated strings.
+5.  All tags should be in English.
+6.  Do NOT include any newlines within the tag strings.
+7.  Return only the JSON object, without any markdown formatting (\`\`\`json) or explanatory text.
+8.  가중치를 표현할 때, novelai는 {강화된 프롬프트}, [약화된 프롬프트] 로 적는다. 중괄호와 대괄호의 개수가 많을수록 그 효과는 강화된다. 너무 많이 사용하면 안된다.
+9.  가중치를 표현할 때, Stablediffusion이나 Pixai는 (강화된 프롬프트), [약화된 프롬프트]로 적는다.
+10. 캐릭터나 배경, 구도를 세세하고 면밀히 분석하여, 아주 디테일하게 프롬프트를 적용해야 한다. 캐릭터의 포인트 하나하나를 자세히.
+
+**Example Output Structure:**
+{
+  "novelai": {
+    "character": "1girl, long hair, blue eyes, white dress, standing, smiling",
+    "non_character": "outdoor, sunny, forest, clear sky, highly detailed, realistic"
+  },
+  "pixai": {
+    "character": "masterpiece, best quality, 1girl, solo, long hair, blue eyes, white dress, standing, smiling, looking at viewer",
+    "non_character": "highly detailed, absurdres, outdoor, sunny, forest, volumetric lighting, cinematic lighting"
+  }
+}
+`;
+        
+        // Gemini API 요청을 위한 contents 배열 구성
+        const contents = [{
+            parts: [
+                { text: systemPrompt },
+                { inline_data: { mime_type: blob.type, data: base64data } }
+            ]
+        }];
+
+        // Gemini API 호출 (gemini-2.0-flash)
+        const rawJson = await this._callGeminiAPI('gemini-2.0-flash', geminiApiKey, contents, '이미지 태그 생성 중...');
+        
+        let parsedData;
+        try {
+            // API 응답(JSON 문자열)을 파싱
+            parsedData = JSON.parse(rawJson);
+        } catch (e) {
+            console.error("AI 응답을 파싱하는 데 실패했습니다. 응답 형식이 올바르지 않습니다:", rawJson, e);
+            throw new Error("AI 응답을 파싱하는 데 실패했습니다. 응답 형식이 올바르지 않습니다.");
+        }
+        
+        // 결과를 캐시에 저장한다.
+        ThemePark.state.apiCache.set(imageUrl + '_tags', parsedData);
+        return parsedData;
+    },
+
     /**
      * Gemini Vision API를 사용하여 이미지로부터 캐릭터 프로필을 생성한다.
      * 세계관(worldDescription)을 추가로 받아 AI 프롬프트를 보강한다.
@@ -400,6 +485,30 @@ ThemePark.api = {
             translationOutput.textContent = '번역에 실패했습니다.';
         } finally {
             if(translateBtn) translateBtn.disabled = false;
+        }
+    },
+    /**
+     * Zeta API로부터 특정 캐릭터(Plot)의 상세 정보를 가져온다.
+     * @param {string} plotId - 가져올 캐릭터의 ID
+     * @returns {Promise<object>} 캐릭터 정보 JSON 객체
+     */
+    async getPlotData(plotId) {
+        // API 호출 결과를 캐시에서 먼저 확인한다.
+        if (ThemePark.state.apiCache.has(plotId)) {
+            return ThemePark.state.apiCache.get(plotId);
+        }
+        try {
+            const response = await fetch(`https://api.zeta-ai.io/v1/plots/${plotId}`);
+            if (!response.ok) {
+                throw new Error(`API 요청 실패 (상태: ${response.status})`);
+            }
+            const data = await response.json();
+            // 성공적인 응답을 캐시에 저장한다.
+            ThemePark.state.apiCache.set(plotId, data);
+            return data;
+        } catch (error) {
+            console.error(`Plot 데이터(${plotId})를 가져오는 중 오류 발생:`, error);
+            throw error;
         }
     }
 };
