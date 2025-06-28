@@ -256,19 +256,16 @@
     animation: firecracker-burst 1s ease-out forwards; /* 애니메이션 시간 증가 */
     transform-origin: center;
 }
-/* --- UI 컨테이너 (뉴모피즘 & 블러) --- */
 .theme-park-container {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
     position: fixed; 
-    bottom: 2vh; 
+    bottom: 12vh; /* 2vh에서 10% 위로 올림 */
     right: 2vw; 
-    z-index: 2147483646;
-    /* [수정] 너비는 자식 요소에 의해 자동으로 결정되도록 합니다. */
+    z-index: 1147483641;
     width: auto; 
     height: auto; 
-    max-height: 96vh;
+    max-height: 76.8vh; /* 96vh에서 20% 감소 */
     display: flex;
-    /* [수정] 툴바(HTML상 첫 번째 자식)를 오른쪽에 배치하기 위해 flex 방향을 반대로 설정합니다. */
     flex-direction: row-reverse; 
     align-items: flex-end;
     border-radius: 18px;
@@ -296,119 +293,105 @@ html:not(.theme-park-container) { filter: none; }
 
 /* --- 툴바 (뉴모피즘) --- */
 .theme-park-toolbar {
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    padding: 15px 0; 
-    gap: 12px; 
-    flex-shrink: 0; /* 툴바가 줄어들지 않도록 고정 */
-    width: 70px; /* 툴바의 고정 너비 */
-    /* [수정] position: relative는 더 이상 필요하지 않습니다. */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0; /* 15px에서 70% 수준으로 감소 */
+    gap: 8px; /* 12px에서 70% 수준으로 감소 */
+    flex-shrink: 0;
+    width: 49px; /* 70px에서 70% 수준으로 감소 */
     z-index: 10;
     box-sizing: border-box;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .toolbar-item {
-    width: 48px; 
-    height: 48px;
-    border-radius: 15px;
+    width: 34px; /* 48px에서 70% 수준으로 감소 */
+    height: 34px; /* 48px에서 70% 수준으로 감소 */
+    border-radius: 10px; /* 15px에서 70% 수준으로 감소 */
     background: #3a3a3c;
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
-    box-shadow: 
-        4px 4px 8px rgba(0, 0, 0, 0.3),   
-        -4px -4px 8px rgba(70, 70, 75, 0.1);
+    box-shadow:
+        2.8px 2.8px 5.6px rgba(0, 0, 0, 0.3),   /* 기존 값의 약 70% */
+        -2.8px -2.8px 5.6px rgba(70, 70, 75, 0.1); /* 기존 값의 약 70% */
     transition: all 0.2s ease-in-out;
-    font-size: 22px; 
-    color: #c0c0c0; 
+    font-size: 16px; /* 22px에서 70% 수준으로 감소 */
+    color: #c0c0c0;
 }
-.toolbar-item:hover { 
-    box-shadow: 
-        2px 2px 4px rgba(0, 0, 0, 0.2), 
-        -2px -2px 4px rgba(70, 70, 75, 0.08);
-    transform: translateY(0); 
+.toolbar-item:hover {
+    box-shadow:
+        1.4px 1.4px 2.8px rgba(0, 0, 0, 0.2), /* 기존 값의 약 70% */
+        -1.4px -1.4px 2.8px rgba(70, 70, 75, 0.08); /* 기존 값의 약 70% */
+    transform: translateY(0);
     background: #4a4a4f;
 }
-.toolbar-item.active { 
-    background: linear-gradient(145deg, #0a84ff, #0056b3); 
+.toolbar-item.active {
+    background: linear-gradient(145deg, #0a84ff, #0056b3);
     color: white;
-    box-shadow: 
-        inset 3px 3px 6px rgba(0, 0, 0, 0.2), 
-        inset -3px -3px 6px rgba(255, 255, 255, 0.1);
-    outline: none; 
+    box-shadow:
+        inset 2.1px 2.1px 4.2px rgba(0, 0, 0, 0.2), /* 기존 값의 약 70% */
+        inset -2.1px -2.1px 4.2px rgba(255, 255, 255, 0.1); /* 기존 값의 약 70% */
+    outline: none;
 }
 .toolbar-item svg {
-    fill: currentColor; 
-    width: 24px;
-    height: 24px;
+    fill: currentColor;
+    width: 18px; /* 24px에서 70% 수준으로 감소 */
+    height: 18px; /* 24px에서 70% 수준으로 감소 */
 }
 /* --- 탭 패널 (블러 & 뉴모피즘) --- */
 .tab-pane {
-    /* [수정] position: absolute를 제거하고 일반 flex 아이템으로 만듭니다. */
-    /* position: absolute; */ 
-    
-    /* [수정] left, width 속성을 제거합니다. 너비는 아래에서 직접 지정합니다. */
-    /* left: 70px; */
-    /* width: calc(100% - 70px); */
-
-    display: none; /* 활성화될 때까지 숨김 */
+    display: none;
     flex-direction: column;
     background-color: rgba(28, 28, 30, 0.7);
-    /* [수정] 툴바와의 경계선이 오른쪽으로 바뀌었습니다. */
-    border-left: none; 
+    border-left: none;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
-    /* [수정] 왼쪽 모서리만 둥글게 처리합니다. */
-    border-radius: 18px 0 0 18px; 
-    
-    /* [수정] 패널의 너비를 명시적으로 지정하고 애니메이션을 위해 transition을 추가합니다. */
+    border-radius: 18px 0 0 18px;
     width: 0;
     opacity: 0;
-    overflow: hidden; /* 너비가 0일 때 내용이 보이지 않도록 합니다. */
+    overflow: hidden;
     transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
-    
     box-sizing: border-box;
-    height: 100%;
+    height: 100%; /* 탭 패널 자체의 높이는 여전히 컨테이너에 맞춰 100%를 유지 */
 }
 
 /* [수정] .tab-active 컨테이너는 높이만 조절하도록 단순화합니다. */
 .theme-park-container.tab-active {
     height: auto;
-    min-height: 45vh;
+    min-height: calc(40vh + 60px); /* 탭 본문 높이 + 헤더 높이(대략 60px) */
     max-height: 85vh;
 }
 
 .tab-pane.active {
     display: flex;
-    /* [수정] 활성화될 때 목표 너비와 투명도를 지정합니다. */
-    width: clamp(270px, 30vw, 430px);
+    width: clamp(216px, 24vw, 344px); /* 이전에 20% 줄인 값 유지 */
     opacity: 1;
 }
 
 .tab-header {
-    padding: 12px 20px; 
-    background-color: rgba(255, 255, 255, 0.05); 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    font-weight: 600; 
+    padding: 10px 15px; /* 12px 20px에서 70% 수준으로 감소 */
+    background-color: rgba(255, 255, 255, 0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
     flex-shrink: 0;
-    border-radius: 0 18px 0 0; 
+    border-radius: 0 18px 0 0;
     color: #e0e0e0;
     box-sizing: border-box;
 }
-.close-tab-btn { cursor: pointer; font-size: 28px; color: #a0a0a5; transition: color 0.2s; }
-.close-tab-btn:hover { color: #f2f2f7; }
-.tab-content-body { 
-    padding: 20px; /* 기존 패딩 유지. 이 패딩이 내용을 잘라낼 수도 있으므로 확인 필요 */
-    overflow-y: auto; 
-    flex-grow: 1; 
-    box-sizing: border-box; 
-} 
-.tab-content-body::-webkit-scrollbar { width: 6px; } 
-.tab-content-body::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; } 
-.tab-content-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; } 
+.close-tab-btn { cursor: pointer; font-size: 22px; /* 28px에서 70% 수준으로 감소 */ color: #a0a0a5; transition: color 0.2s; }
+.tab-content-body {
+    padding: 15px; /* 20px에서 70% 수준으로 감소 */
+    max-height: 40vh; /* 창 높이의 40%로 고정 */
+    overflow-y: auto; /* 스크롤바 추가 */
+    flex-grow: 0; /* max-height에 따라 높이가 결정되므로 flex-grow를 0으로 설정 */
+    box-sizing: border-box;
+}
+.tab-content-body::-webkit-scrollbar { width: 6px; }
+.tab-content-body::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+.tab-content-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 .tab-content-body::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 
 /* --- 메인 탭 그리드 레이아웃 (뉴모피즘) --- */
@@ -932,16 +915,6 @@ html:not(.theme-park-container) { filter: none; }
 @keyframes fireworkExplode { 0% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.5); } 20% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.1); } }
 @keyframes slideInFromRight { from { opacity: 0; transform: translateX(120px); } to { opacity: 1; transform: translateX(0); } }
 
-/* 모바일 최적화 */
-@media (orientation: portrait) {
-    .theme-park-container { top: 3vh; bottom: auto; align-items: flex-start; right: 3vw; left: auto; } 
-    .theme-park-container.tab-active { width: clamp(300px, 95vw, 450px); height: 75vh; max-height: 85vh; }
-    .theme-park-toolbar { width: 60px; } 
-    .toolbar-item { width: 42px; height: 42px; font-size: 20px; } 
-    .tab-pane { left: 0; width: 100%; /* 전체 너비 */; }
-    .translator-panel-container { top: 5vh; right: 2vw; left: auto; width: clamp(300px, 95vw, 450px); } 
-}
-
 /* 생성 마법사 모달 내부 스타일 */
 .wizard-modal-body {
     display: flex;
@@ -1137,6 +1110,7 @@ html:not(.theme-park-container) { filter: none; }
     backdrop-filter: blur(25px) saturate(180%);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
     width: 70vw; /* JS로 제어됨 */
+    z-index: 2147413640;
     max-width: 1400px;
     min-width: 375px;
     height: 90vh; /* JS로 제어됨 */
@@ -1235,13 +1209,23 @@ html:not(.theme-park-container) { filter: none; }
 .ranking-card .favorite-btn:hover { transform: scale(1.15); color: #FFD700; }
 .ranking-card .favorite-btn.active { color: #FFD700; text-shadow: 0 0 8px #FFD700; }
 
+.ranking-card.hashtag-pure-love {
+    /* #순애 해시태그가 있는 카드에 적용될 핑크-보라 그라데이션 배경 */
+    background: linear-gradient(135deg, rgba(255, 192, 203, 0.1), rgba(128, 0, 128, 0.1)), rgba(44, 44, 46, 0.6);
+}
+
+.ranking-card.hashtag-betrayal {
+    /* #빼앗김 해시태그가 있는 카드에 적용될 빨강 그라데이션 배경 */
+    background: linear-gradient(135deg, rgba(255, 0, 0, 0.1), rgba(139, 0, 128, 0.1)), rgba(44, 44, 46, 0.6);
+}
+
 .ranking-card-link { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
 .ranking-card-image { width: 100%; height: 82px; object-fit: cover; }
 .ranking-card-body { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
 .ranking-card-name { font-size: 14px; font-weight: 600; color: #f2f2f7; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-bottom-info { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: auto; }
-.ranking-card-tags { display: flex; flex-wrap: wrap; gap: 4px; overflow: hidden; align-self: flex-start; flex-shrink: 1; min-width: 0; }
-.ranking-card-tag { font-size: 10px; background-color: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #c0c0c0; }
+.ranking-card-tags { display: flex; flex-wrap: wrap; gap: 3.6px; overflow: hidden; align-self: flex-start; flex-shrink: 1; min-width: 0; }
+.ranking-card-tag { font-size: 10.4px; background-color: rgba(255,255,255,0.1); padding: 1.6px 5.2px; border-radius: 3.2px; color: #c0c0c0; }
 .group\/item.flex.flex-col.w-\[148px\].mr-3.min-h-\[268px\].shrink-0 {
     min-height: 215px; /* 기존 268px에서 약 20% 감소 */
 }
@@ -1304,7 +1288,7 @@ button.danger { background-color: #ff453a !important; color: white !important; b
 }
 @media (max-width: 768px) {
     #ranking-modal-overlay .modal-content { width: 95vw !important; height: 90vh !important; }
-    .ranking-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .ranking-grid { grid-template-columns:  repeat(var(--cards-per-row, 3)), 1fr; gap: 10px; }
     .ranking-card-body { padding: 8px; }
     .ranking-card-name { font-size: 13px; }
     .ranking-card-footer { flex-direction: column; align-items: flex-start; gap: 4px; }
@@ -1511,11 +1495,53 @@ button.danger { background-color: #ff453a !important; color: white !important; b
 button.danger { background-color: #ff453a !important; color: white !important; border: none !important; }
 .history-item-empty { color: #8e8e93; text-align: center; padding: 20px; }
 
+
+
+/* 이름 옆에 추가될 태그 스타일 */
+.ranking-additional-tag {
+    margin-left: 5px;
+    font-size: 9.5px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    /* 기본값: 파란색 계열 */
+    background-color: rgba(0, 123, 255, 0.2);
+    color: #a0c4ff;
+    flex-shrink: 0;
+    white-space: nowrap; /* 줄바꿈 방지 */
+}
+
+/* #순애 태그 (핑크-보라) */
+.ranking-additional-tag.tag-pure-love {
+    background: linear-gradient(90deg, rgba(255, 105, 180, 0.7), rgba(147, 112, 219, 0.7)); /* 더 진한 핑크-보라 그라데이션 */
+    color: #ffffff; /* 진한 흰색 */
+    border: 1px solid rgba(255, 105, 180, 0.9); /* 테두리 추가 */
+}
+
+/* #빼앗김 태그 (빨강) */
+.ranking-additional-tag.tag-betrayal {
+    background-color: rgba(255, 0, 0, 0.7); /* 더 진한 빨간색 */
+    color: #ffffff; /* 진한 흰색 */
+    border: 1px solid rgba(255, 0, 0, 0.9); /* 테두리 추가 */
+}
+
+/* #블루아카이브 태그 (갈색) */
+.ranking-additional-tag.tag-bluearchive {
+    background-color: rgba(139, 69, 19, 0.7); /* 더 진한 갈색 */
+    color: #ffffff; /* 진한 흰색 */
+    border: 1px solid rgba(139, 69, 19, 0.9); /* 테두리 추가 */
+}
+
 /* 모바일 반응형 */
 @media (max-width: 1200px) {
-    #ranking-modal-overlay .modal-content { width: 85vw !important; }
-    .ranking-grid { grid-template-columns: repeat(2, 1fr); }
+    #ranking-modal-overlay .modal-content {
+        width: 85vw !important;
+    }
+    .ranking-grid {
+        /* JS에서 var(--cards-per-row, 3)으로 제어되는 대신, 2개로 고정 */
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
+
 @media (max-width: 768px) {
     #ranking-modal-overlay .modal-content { width: 95vw !important; height: 90vh !important; } /* 모바일에서 너비/높이 고정, JS 제어 무시 */
     .ranking-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -1526,3 +1552,4 @@ button.danger { background-color: #ff453a !important; color: white !important; b
 @media (max-width: 480px) {
     .ranking-grid { grid-template-columns: 1fr; }
 }
+

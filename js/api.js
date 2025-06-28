@@ -1,3 +1,5 @@
+// js/api.js
+
 /**
  * js/api.js
  * - Gemini API와 통신하는 모든 함수를 포함한다.
@@ -29,7 +31,7 @@ ThemePark.api = {
                 ThemePark.ui.updateDynamicToast(progressToast, { progress: currentProgress });
             }, 125);
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKey}`, {
+            const response = await fetch(`${ThemePark.config.GEMINI_API_BASE_URL}${modelToUse}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents })
@@ -50,7 +52,7 @@ ThemePark.api = {
             
             // 작업 완료 후 100%로 채우고 토스트를 숨긴다.
             ThemePark.ui.updateDynamicToast(progressToast, { title: '작업 완료!', progress: 100 });
-            setTimeout(() => ThemePark.ui.hideDynamicToast(progressToast), 1500);
+            setTimeout(() => ThemePark.ui.hideDynamicToast(progressToast), ThemePark.config.TOAST_DURATION_SHORT);
 
             return data.candidates[0].content.parts[0].text.replace(/```(json|yaml)?\n?|```/g, '').trim();
         } catch (error) {
@@ -67,12 +69,13 @@ ThemePark.api = {
      * @returns {Promise<object>} NovelAI 및 PixAI/Stable Diffusion 태그를 포함하는 JSON 객체
      */
     async generateTagsFromImage(imageUrl) {
+        const cacheKey = imageUrl + '_tags';
         // 이미지를 캐시에서 먼저 찾아본다.
-        if (ThemePark.state.apiCache.has(imageUrl + '_tags')) {
-            return ThemePark.state.apiCache.get(imageUrl + '_tags');
+        if (ThemePark.state.apiCache.has(cacheKey)) {
+            return ThemePark.state.apiCache.get(cacheKey);
         }
 
-        const { geminiApiKey } = await chrome.storage.sync.get('geminiApiKey');
+        const { geminiApiKey } = await ThemePark.storage.get('geminiApiKey');
         if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
         
         // 이미지 URL에서 Blob 데이터를 가져온다.
@@ -88,7 +91,7 @@ ThemePark.api = {
             reader.readAsDataURL(blob);
         });
 
-        // Gemini API에 전달할 시스템 프롬프트 구성
+        // Gemini API에 전달할 시스템 프롬프트 구성 (이 부분은 문자열 리터럴로 유지)
         const systemPrompt = `You are an expert AI for generating image tags for AI image generation models like NovelAI and Stable Diffusion (PixAI).
 Based on the provided image, output a JSON object containing character-focused and non-character (background/style) tags for both NovelAI and PixAI/Stable Diffusion styles.
 
@@ -130,7 +133,7 @@ Based on the provided image, output a JSON object containing character-focused a
         }];
 
         // Gemini API 호출 (gemini-2.0-flash)
-        const rawJson = await this._callGeminiAPI('gemini-2.0-flash', geminiApiKey, contents, '이미지 태그 생성 중...');
+        const rawJson = await this._callGeminiAPI(ThemePark.config.GEMINI_VISION_MODEL, geminiApiKey, contents, '이미지 태그 생성 중...');
         
         let parsedData;
         try {
@@ -142,7 +145,7 @@ Based on the provided image, output a JSON object containing character-focused a
         }
         
         // 결과를 캐시에 저장한다.
-        ThemePark.state.apiCache.set(imageUrl + '_tags', parsedData);
+        ThemePark.state.apiCache.set(cacheKey, parsedData);
         return parsedData;
     },
 
@@ -151,7 +154,7 @@ Based on the provided image, output a JSON object containing character-focused a
      * 세계관(worldDescription)을 추가로 받아 AI 프롬프트를 보강한다.
      */
     async generateProfileWithGemini(imageUrl, worldDescription = '') {
-        const { geminiApiKey } = await chrome.storage.sync.get('geminiApiKey');
+        const { geminiApiKey } = await ThemePark.storage.get('geminiApiKey');
         if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
     
         const response = await fetch(imageUrl);
@@ -203,7 +206,7 @@ Based on the provided image, output a JSON object containing character-focused a
             ]
         }];
     
-        const rawYaml = await this._callGeminiAPI('gemini-2.0-flash', geminiApiKey, contents, '이미지 분석 및 프로필 생성 중...');
+        const rawYaml = await this._callGeminiAPI(ThemePark.config.GEMINI_VISION_MODEL, geminiApiKey, contents, '이미지 분석 및 프로필 생성 중...');
         return rawYaml;
     },
     
@@ -222,7 +225,7 @@ Based on the provided image, output a JSON object containing character-focused a
         statusEl.className = 'validating';
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash?key=${apiKey}`);
+            const response = await fetch(`${ThemePark.config.GEMINI_API_BASE_URL}gemini-1.5-flash?key=${apiKey}`); // 모델명 상수로 변경
             if (response.ok) {
                 statusEl.textContent = '✅ 유효한 키입니다.';
                 statusEl.className = 'valid';
@@ -252,12 +255,12 @@ Based on the provided image, output a JSON object containing character-focused a
         ThemePark.state.originalPromptTexts.set(textareaElement, textareaElement.value);
 
         try {
-            const { geminiApiKey, geminiModel, aiPromptSettings } = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'aiPromptSettings']);
+            const { geminiApiKey, geminiModel, aiPromptSettings } = await ThemePark.storage.get(['geminiApiKey', 'geminiModel', 'aiPromptSettings']);
             if (!geminiApiKey) {
                 throw new Error('Gemini API 키가 설정되지 않았습니다.');
             }
 
-            const modelToUse = geminiModel || 'gemini-1.5-flash';
+            const modelToUse = geminiModel || ThemePark.config.DEFAULT_GEMINI_MODEL;
             const settings = aiPromptSettings || { length: '보통', include: '', exclude: '' };
             const originalText = textareaElement.value;
             
@@ -274,16 +277,12 @@ Based on the provided image, output a JSON object containing character-focused a
 
             const newText = await this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: fullPrompt }] }], '프롬프트 생성 중...');
 
-            if (actionType === 'writers_block') { // 이 조건은 이제 사용되지 않음
-                textareaElement.value += `\n\n--- AI 제안 ---\n${newText}`;
-            } else {
-                textareaElement.value = newText;
-            }
+            textareaElement.value = newText;
             textareaElement.dispatchEvent(new Event('input', { bubbles: true }));
             ThemePark.ui.showDynamicToast({ title: 'AI 제안 적용 완료!', icon: '✨' });
 
         } catch (error) {
-            ThemePark.ui.showDynamicToast({ title: '오류 발생', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: 4000 });
+            ThemePark.ui.showDynamicToast({ title: '오류 발생', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: ThemePark.config.TOAST_DURATION_API_ERROR });
             if (ThemePark.state.originalPromptTexts.has(textareaElement)) {
                 textareaElement.value = ThemePark.state.originalPromptTexts.get(textareaElement);
             }
@@ -301,9 +300,9 @@ Based on the provided image, output a JSON object containing character-focused a
      * @returns {Promise<object>} 생성된 세계관 및 캐릭터 프로필 YAML
      */
     async generateWithWizard(settings) {
-        const { geminiApiKey, geminiModel } = await chrome.storage.sync.get('geminiApiKey');
+        const { geminiApiKey, geminiModel } = await ThemePark.storage.get('geminiApiKey');
         if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
-        const modelToUse = geminiModel || 'gemini-2.0-flash'; // 마법사는 1.5 Pro 권장
+        const modelToUse = geminiModel || ThemePark.config.GEMINI_VISION_MODEL; // 마법사는 2.0-Flash 권장 (Vision 기능 사용)
 
         const getLengthModifier = (length) => {
             switch (length) {
@@ -363,7 +362,11 @@ Based on the provided image, output a JSON object containing character-focused a
             promises.push(Promise.resolve('')); // 캐릭터 생성 요청이 없으면 빈 문자열 반환
         }
 
-        const [worldYaml, characterYaml] = await Promise.all(promises);
+        // Promise.allSettled를 사용하여 어떤 프롬프트가 실패하더라도 다른 프롬프트의 결과를 얻을 수 있도록 함
+        const results = await Promise.allSettled(promises);
+
+        const worldYaml = results[0]?.status === 'fulfilled' ? results[0].value : (results[0]?.reason?.message || '세계관 생성 실패');
+        const characterYaml = results[1]?.status === 'fulfilled' ? results[1].value : (results[1]?.reason?.message || '캐릭터 생성 실패');
 
         return {
             world: worldYaml,
@@ -376,20 +379,20 @@ Based on the provided image, output a JSON object containing character-focused a
      */
     async generatePaletteWithGemini(prompt) {
         try {
-            const { geminiApiKey, geminiModel } = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+            const { geminiApiKey, geminiModel } = await ThemePark.storage.get(['geminiApiKey', 'geminiModel']);
             if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
             
-            const modelToUse = geminiModel || 'gemini-1.5-flash';
+            const modelToUse = geminiModel || ThemePark.config.DEFAULT_GEMINI_MODEL;
             const systemPrompt = `You are a color palette generator AI for web themes. Your task is to generate a JSON object containing 12 specific color keys based on the user's description. The keys are: "mainBgColor", "componentBgColor", "mainTextColor", "subTextColor", "myBubbleBgColor", "myBubbleTextColor", "charBubbleBgColor", "charBubbleTextColor", "accentColor", "accentTextColor", "scrollbarTrackColor", "scrollbarThumbColor". All color values must be in hex format (e.g., "#RRGGBB"). Do not add any explanations, just return the raw JSON object.`;
             const fullPrompt = `${systemPrompt}\nUser description: "${prompt}"`;
 
             const rawJson = await this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: fullPrompt }] }], 'AI 팔레트 생성 중...');
             const newColors = JSON.parse(rawJson);
 
-            const { customThemeSettings } = await chrome.storage.local.get('customThemeSettings');
+            const { customThemeSettings } = await ThemePark.storage.getLocal('customThemeSettings');
             ThemePark.state.previousCustomThemeSettings = customThemeSettings || { ...ThemePark.config.defaultCustomSettings };
             
-            await chrome.storage.local.set({ customThemeSettings: newColors });
+            await ThemePark.storage.setLocal({ customThemeSettings: newColors });
             ThemePark.ui.updateColorPickers(newColors);
             if (document.getElementById('theme-select').value === 'custom') {
                 ThemePark.features.applyCustomTheme(newColors);
@@ -398,7 +401,7 @@ Based on the provided image, output a JSON object containing character-focused a
             ThemePark.ui.showDynamicToast({ title: 'AI 팔레트 적용 완료!', icon: '🎨' });
 
         } catch (error) {
-            ThemePark.ui.showDynamicToast({ title: '팔레트 생성 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: 4000 });
+            ThemePark.ui.showDynamicToast({ title: '팔레트 생성 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: ThemePark.config.TOAST_DURATION_API_ERROR });
         }
     },
 
@@ -406,28 +409,29 @@ Based on the provided image, output a JSON object containing character-focused a
      * 캐싱 로직을 적용하여 Gemini API로 대화 내용을 요약한다.
      */
     async summarizeChat(chatText) {
+        const cacheKey = chatText; // 요약은 텍스트 자체를 키로 사용
         // 캐시에서 먼저 찾아본다.
-        if (ThemePark.state.apiCache.has(chatText)) {
+        if (ThemePark.state.apiCache.has(cacheKey)) {
             console.log("요약 결과를 캐시에서 불러왔음");
-            ThemePark.ui.showInfoModal("AI 대화 맥락 요약 (캐시됨)", ThemePark.state.apiCache.get(chatText).replace(/\n/g, '<br>'));
+            ThemePark.ui.showInfoModal("AI 대화 맥락 요약 (캐시됨)", ThemePark.state.apiCache.get(cacheKey).replace(/\n/g, '<br>'));
             return;
         }
 
         try {
-            const { geminiApiKey, geminiModel } = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+            const { geminiApiKey, geminiModel } = await ThemePark.storage.get(['geminiApiKey', 'geminiModel']);
             if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
             
             const systemPrompt = `You are an AI expert in summarizing dialogue contexts. Please summarize the key context, atmosphere, and relationship between the characters from the following chat dialogue. Please provide the summary in Korean, in a concise and easy-to-understand manner.`;
             const fullPrompt = `${systemPrompt}\n\n--- 채팅 대화 ---\n${chatText}`;
-            const modelToUse = geminiModel || 'gemini-1.5-flash';
+            const modelToUse = geminiModel || ThemePark.config.DEFAULT_GEMINI_MODEL;
             const summary = await this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: fullPrompt }] }], '대화 요약 중...');
             
             // 결과를 캐시에 저장한다.
-            ThemePark.state.apiCache.set(chatText, summary);
+            ThemePark.state.apiCache.set(cacheKey, summary);
             ThemePark.ui.showInfoModal("AI 대화 맥락 요약", summary.replace(/\n/g, '<br>'));
 
         } catch (error) {
-            ThemePark.ui.showDynamicToast({ title: '요약 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: 4000 });
+            ThemePark.ui.showDynamicToast({ title: '요약 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: ThemePark.config.TOAST_DURATION_API_ERROR });
         }
     },
 
@@ -435,26 +439,27 @@ Based on the provided image, output a JSON object containing character-focused a
      * 캐싱 로직을 적용하여 Gemini API로 대화 스타일을 분석한다.
      */
     async analyzeChatStyle(chatText) {
-        if (ThemePark.state.apiCache.has(chatText + '_style')) {
+        const cacheKey = chatText + '_style';
+        if (ThemePark.state.apiCache.has(cacheKey)) {
             console.log("스타일 분석 결과를 캐시에서 불러왔음");
-            ThemePark.ui.showInfoModal("AI 대화 스타일 분석 (캐시됨)", ThemePark.state.apiCache.get(chatText + '_style').replace(/\n/g, '<br>'));
+            ThemePark.ui.showInfoModal("AI 대화 스타일 분석 (캐시됨)", ThemePark.state.apiCache.get(cacheKey).replace(/\n/g, '<br>'));
             return;
         }
 
         try {
-            const { geminiApiKey, geminiModel } = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+            const { geminiApiKey, geminiModel } = await ThemePark.storage.get(['geminiApiKey', 'geminiModel']);
             if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
             
             const systemPrompt = `You are an AI character analyst. Based on the following dialogue, analyze the character's personality, speaking style (e.g., formal, casual, emotional), key vocabulary, and underlying emotions. Present the analysis in Korean, using bullet points for clarity.`;
             const fullPrompt = `${systemPrompt}\n\n--- 채팅 대화 ---\n${chatText}`;
-            const modelToUse = geminiModel || 'gemini-1.5-flash';
+            const modelToUse = geminiModel || ThemePark.config.DEFAULT_GEMINI_MODEL;
             const analysis = await this._callGeminiAPI(modelToUse, geminiApiKey, [{ parts: [{ text: fullPrompt }] }], '대화 스타일 분석 중...');
             
-            ThemePark.state.apiCache.set(chatText + '_style', analysis);
+            ThemePark.state.apiCache.set(cacheKey, analysis);
             ThemePark.ui.showInfoModal("AI 대화 스타일 분석", analysis.replace(/\n/g, '<br>'));
 
         } catch (error) {
-            ThemePark.ui.showDynamicToast({ title: '분석 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: 4000 });
+            ThemePark.ui.showDynamicToast({ title: '분석 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: ThemePark.config.TOAST_DURATION_API_ERROR });
         }
     },
     
@@ -469,10 +474,10 @@ Based on the provided image, output a JSON object containing character-focused a
         translationOutput.textContent = '번역 중...';
 
         try {
-            const { geminiApiKey, geminiModel } = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+            const { geminiApiKey, geminiModel } = await ThemePark.storage.get(['geminiApiKey', 'geminiModel']);
             if (!geminiApiKey) throw new Error('Gemini API 키가 설정되지 않았습니다.');
 
-            const modelToUse = geminiModel || 'gemini-1.5-flash';
+            const modelToUse = geminiModel || ThemePark.config.DEFAULT_GEMINI_MODEL;
             const prompt = `Translate the following text into ${targetLang}. Provide only the translated text, without any additional explanations, headers, or markdown.`;
             const fullPrompt = `${prompt}\n\nText to translate:\n"${text}"`;
 
@@ -481,7 +486,7 @@ Based on the provided image, output a JSON object containing character-focused a
             ThemePark.ui.showDynamicToast({ title: '번역 완료!', icon: '🌐' });
 
         } catch (error) {
-            ThemePark.ui.showDynamicToast({ title: '번역 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: 4000 });
+            ThemePark.ui.showDynamicToast({ title: '번역 실패', details: error.message || '알 수 없는 오류입니다.', icon: '❌', duration: ThemePark.config.TOAST_DURATION_API_ERROR });
             translationOutput.textContent = '번역에 실패했습니다.';
         } finally {
             if(translateBtn) translateBtn.disabled = false;

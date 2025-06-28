@@ -5,6 +5,54 @@
  */
 ThemePark.ui = {
 
+    // --- 내부 헬퍼 함수들 ---
+
+    /**
+     * DOM 요소를 생성하고 속성을 설정하는 헬퍼 함수.
+     * @param {string} tag - 생성할 HTML 태그 이름 (예: 'div', 'button').
+     * @param {object} [options={}] - 요소에 설정할 속성 객체.
+     * @param {Array<HTMLElement|string>} [children=[]] - 요소의 자식으로 추가할 엘리먼트 또는 텍스트 배열.
+     * @returns {HTMLElement} 생성된 HTML 요소.
+     */
+    _createElement(tag, options = {}, children = []) {
+        const element = document.createElement(tag);
+        for (const key in options) {
+            if (options.hasOwnProperty(key)) {
+                if (key === 'className') {
+                    element.className = options[key];
+                } else if (key === 'dataset') {
+                    for (const dataKey in options[key]) {
+                        element.dataset[dataKey] = options[key][dataKey];
+                    }
+                } else if (key === 'style') {
+                    for (const styleKey in options[key]) {
+                        element.style[styleKey] = options[key][styleKey];
+                    }
+                } else if (key === 'html') {
+                    element.innerHTML = options[key];
+                } else if (key === 'text') {
+                    element.textContent = options[key];
+                } else {
+                    element.setAttribute(key, options[key]);
+                }
+            }
+        }
+        children.forEach(child => {
+            if (typeof child === 'string') {
+                element.appendChild(document.createTextNode(child));
+            } else if (child instanceof HTMLElement) {
+                element.appendChild(child);
+            }
+        });
+        return element;
+    },
+
+    /**
+     * 이벤트를 일정 시간 지연시켜 과도한 호출을 막는 디바운스 함수다.
+     * ThemePark.utils로 이동하여 범용적으로 사용될 수 있게 함.
+     */
+    _debounce: ThemePark.utils._debounce, // utils에서 가져옴
+
     // 동적 UI 요소 생성 및 관리
 
     /**
@@ -14,33 +62,43 @@ ThemePark.ui = {
      */
     showDynamicToast(options) {
         console.log(`[ThemePark UI] 토스트 메시지 표시: ${options.title}`);
-        const { title, details, icon, duration = 3000, isProgress = false } = options;
+        const { title, details, icon, duration = ThemePark.config.TOAST_DURATION_NORMAL, isProgress = false } = options;
+
         let container = document.getElementById('dynamic-island-container');
         if (!container) {
-            container = document.createElement('div');
-            container.id = 'dynamic-island-container';
-            container.className = 'dynamic-island-container';
+            container = this._createElement('div', { id: 'dynamic-island-container', className: 'dynamic-island-container' });
             document.body.appendChild(container);
         }
+
         const toastId = `toast-${Date.now()}-${Math.random()}`;
-        const island = document.createElement('div');
-        island.id = toastId;
-        island.className = 'dynamic-island';
+        const island = this._createElement('div', {
+            id: toastId,
+            className: 'dynamic-island'
+        });
+
         island.addEventListener('click', () => {
             clearTimeout(island.hideTimeout);
             this.hideDynamicToast(island);
         });
-        let innerHTML = '';
-        if (icon) innerHTML += `<div class="dynamic-island-icon">${icon}</div>`;
-        innerHTML += `<div class="dynamic-island-content">
-                          <div class="dynamic-island-title">${title}</div>
-                          ${details ? `<div class="dynamic-island-details">${details}</div>` : ''}
-                          ${isProgress ? `<div class="island-progress-bar"><div class="island-progress-bar-inner"></div></div>` : ''}
-                      </div>`;
-        island.innerHTML = innerHTML;
+
+        const iconHtml = icon ? `<div class="dynamic-island-icon">${icon}</div>` : '';
+        const detailsHtml = details ? `<div class="dynamic-island-details">${details}</div>` : '';
+        const progressBarHtml = isProgress ? `<div class="island-progress-bar"><div class="island-progress-bar-inner"></div></div>` : '';
+
+        island.innerHTML = `
+            ${iconHtml}
+            <div class="dynamic-island-content">
+                <div class="dynamic-island-title">${title}</div>
+                ${detailsHtml}
+                ${progressBarHtml}
+            </div>
+        `;
         container.appendChild(island);
+
+        // 강제 리플로우를 통해 애니메이션 트리거
         void island.offsetWidth;
         island.classList.add('visible');
+
         if (duration > 0 && !isProgress) {
             island.hideTimeout = setTimeout(() => this.hideDynamicToast(island), duration);
         }
@@ -72,17 +130,14 @@ ThemePark.ui = {
         toastElement.classList.add('hiding');
         toastElement.addEventListener('transitionend', () => toastElement.remove(), { once: true });
     },
-    
+
     /**
      * 정보성 모달창을 띄우는 함수다. (예: AI 요약 결과 표시)
      */
     showInfoModal(title, content) {
-        // 기존 모달이 있다면 제거한다.
         document.getElementById('info-modal-overlay')?.remove();
-        
-        const overlay = document.createElement('div');
-        overlay.id = 'info-modal-overlay';
-        overlay.className = 'modal-overlay';
+
+        const overlay = this._createElement('div', { id: 'info-modal-overlay', className: 'modal-overlay' });
         overlay.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
@@ -96,7 +151,6 @@ ThemePark.ui = {
         document.body.appendChild(overlay);
 
         const closeModal = () => overlay.remove();
-        // 모달 바깥 영역을 클릭하거나 닫기 버튼을 누르면 모달이 닫히게 한다.
         overlay.addEventListener('click', (e) => (e.target === overlay) && closeModal());
         overlay.querySelector('.close-button').addEventListener('click', closeModal);
     },
@@ -106,9 +160,7 @@ ThemePark.ui = {
      */
     showTranslatorPanel(initialText = '') {
         document.getElementById('translator-panel')?.remove();
-        const panel = document.createElement('div');
-        panel.id = 'translator-panel';
-        panel.className = 'translator-panel-container';
+        const panel = this._createElement('div', { id: 'translator-panel', className: 'translator-panel-container' });
         panel.innerHTML = `
             <div class="translator-panel-header"><h3>번역 도구</h3><button class="close-panel-btn">&times;</button></div>
             <div class="translator-panel-body">
@@ -131,22 +183,20 @@ ThemePark.ui = {
         panel.querySelector('#translate-btn').addEventListener('click', () => {
             const text = panel.querySelector('#translation-input').value;
             const lang = panel.querySelector('#target-language-select').value;
-            if(text) ThemePark.api.translateTextWithGemini(text, lang);
+            if (text) ThemePark.api.translateTextWithGemini(text, lang);
         });
 
         panel.querySelector('#copy-translated-text-btn').addEventListener('click', (e) => {
             navigator.clipboard.writeText(panel.querySelector('#translation-output').innerText);
             e.target.textContent = '복사됨!';
-            setTimeout(() => e.target.textContent = '결과 복사', 1000);
+            setTimeout(() => e.target.textContent = '결과 복사', ThemePark.config.TOAST_DURATION_SHORT);
         });
-        
-        // 마지막으로 사용한 언어를 불러와 기본값으로 설정한다.
-        chrome.storage.sync.get('lastTargetLanguage', ({lastTargetLanguage}) => {
-            if(lastTargetLanguage) panel.querySelector('#target-language-select').value = lastTargetLanguage;
+
+        ThemePark.storage.get('lastTargetLanguage').then(({ lastTargetLanguage }) => {
+            if (lastTargetLanguage) panel.querySelector('#target-language-select').value = lastTargetLanguage;
         });
-        // 언어 선택을 변경하면 저장한다.
         panel.querySelector('#target-language-select').addEventListener('change', (e) => {
-            chrome.storage.sync.set({lastTargetLanguage: e.target.value});
+            ThemePark.storage.set({ lastTargetLanguage: e.target.value });
         });
     },
 
@@ -155,11 +205,8 @@ ThemePark.ui = {
      */
     showImg2TagModal(imageUrl, promptPromise) {
         document.getElementById('img2tag-modal-overlay')?.remove();
-        const overlay = document.createElement('div');
-        overlay.id = 'img2tag-modal-overlay';
-        overlay.className = 'modal-overlay';
+        const overlay = this._createElement('div', { id: 'img2tag-modal-overlay', className: 'modal-overlay' });
 
-        // 모달의 내용을 렌더링하는 내부 함수
         const renderContent = (content) => {
             overlay.innerHTML = `
                 <div class="modal-content">
@@ -169,22 +216,19 @@ ThemePark.ui = {
             const closeModal = () => overlay.remove();
             overlay.addEventListener('click', (e) => (e.target === overlay) && closeModal());
             overlay.querySelector('.close-button').addEventListener('click', closeModal);
-            // 모든 복사 버튼에 이벤트 리스너를 추가한다.
             overlay.querySelectorAll('.tag-copy-button').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const textarea = e.target.previousElementSibling;
                     navigator.clipboard.writeText(textarea.value);
                     e.target.textContent = '복사됨!';
-                    setTimeout(() => e.target.textContent = '복사', 1500);
+                    setTimeout(() => e.target.textContent = '복사', ThemePark.config.TOAST_DURATION_SHORT);
                 });
             });
         };
 
-        // 처음에는 로딩 스피너를 보여준다.
         renderContent(`<div class="img2tag-preview"><img src="${imageUrl}" alt="Image Preview"></div><div class="loading-spinner"></div>`);
         document.body.appendChild(overlay);
 
-        // API 호출(Promise)이 완료되면 결과를 렌더링한다.
         promptPromise.then(tags => {
             const resultsHTML = `
                 <div class="img2tag-preview"><img src="${imageUrl}" alt="Image Preview"></div>
@@ -202,8 +246,7 @@ ThemePark.ui = {
                 </div>`;
             renderContent(resultsHTML);
         }).catch(error => {
-            // 실패하면 에러 토스트를 보여주고 모달을 닫는다.
-            ThemePark.ui.showDynamicToast({ title: 'Img2Tag 오류', details: error.message, icon: '❌', duration: 5000 });
+            ThemePark.ui.showDynamicToast({ title: 'Img2Tag 오류', details: error.message, icon: '❌', duration: ThemePark.config.TOAST_DURATION_API_ERROR });
             overlay.remove();
         });
     },
@@ -213,9 +256,7 @@ ThemePark.ui = {
      */
     showGeneratorWizardModal() {
         document.getElementById('generator-wizard-modal-overlay')?.remove();
-        const overlay = document.createElement('div');
-        overlay.id = 'generator-wizard-modal-overlay';
-        overlay.className = 'fullscreen-modal-overlay'; // 풀스크린 모달 클래스
+        const overlay = this._createElement('div', { id: 'generator-wizard-modal-overlay', className: 'fullscreen-modal-overlay' });
         overlay.innerHTML = `
             <div class="fullscreen-modal-content">
                 <div class="modal-header">
@@ -294,7 +335,7 @@ ThemePark.ui = {
         const closeModal = () => overlay.remove();
         overlay.addEventListener('click', (e) => (e.target === overlay) && closeModal());
         overlay.querySelector('.close-button').addEventListener('click', closeModal);
-        overlay.querySelector('#wizard-cancel-btn').addEventListener('click', closeModal); // 취소 버튼 이벤트
+        overlay.querySelector('#wizard-cancel-btn').addEventListener('click', closeModal);
 
         const imageUploadInput = overlay.querySelector('#wizard-image-upload');
         const imagePreviewDiv = overlay.querySelector('#wizard-image-preview');
@@ -322,14 +363,16 @@ ThemePark.ui = {
             const worldKeywords = overlay.querySelector('#wizard-world-keywords-input').value;
             const characterKeywords = overlay.querySelector('#wizard-char-keywords-input').value;
             const promptLength = overlay.querySelector('input[name="wizard-prompt-length"]:checked')?.value || '보통';
-            
-            // 모든 출력을 지우고 로딩 상태 표시
+
             overlay.querySelector('#wizard-world-output').value = '생성 중...';
             overlay.querySelector('#wizard-character-output').value = '생성 중...';
-            
+
             try {
+                // 세계관 설명을 먼저 추출하여 캐릭터 생성에 활용
+                const currentWorldDescription = document.querySelector('textarea[name="longDescription"]')?.value || '';
+
                 const results = await ThemePark.api.generateWithWizard({
-                    name, genre, keywords, worldKeywords, characterKeywords, imageUrl: uploadedImageUrl, length: promptLength
+                    name, genre, keywords, worldKeywords, characterKeywords, imageUrl: uploadedImageUrl, length: promptLength, worldDescription: currentWorldDescription
                 });
 
                 overlay.querySelector('#wizard-world-output').value = results.world || '생성된 세계관 내용이 없습니다.';
@@ -338,13 +381,12 @@ ThemePark.ui = {
                 this.showDynamicToast({ title: '생성 마법사 완료!', icon: '✨' });
 
             } catch (error) {
-                this.showDynamicToast({ title: '생성 마법사 오류', details: error.message, icon: '❌', duration: 5000 });
+                this.showDynamicToast({ title: '생성 마법사 오류', details: error.message, icon: '❌', duration: ThemePark.config.TOAST_DURATION_API_ERROR });
                 overlay.querySelector('#wizard-world-output').value = '오류 발생: ' + (error.message || '알 수 없는 오류');
                 overlay.querySelector('#wizard-character-output').value = '오류 발생: ' + (error.message || '알 수 없는 오류');
             }
         });
 
-        // 선택 적용 버튼 이벤트
         overlay.querySelector('#wizard-apply-selected-btn').addEventListener('click', () => {
             const applyWorld = overlay.querySelector('#apply-world-switch').checked;
             const applyCharacter = overlay.querySelector('#apply-character-switch').checked;
@@ -379,10 +421,9 @@ ThemePark.ui = {
                     this.showDynamicToast({ title: '오류', details: '캐릭터 입력 필드를 찾을 수 없습니다.', icon: '❌' });
                 }
             }
-            closeModal(); // 적용 후 모달 닫기
+            closeModal();
         });
     },
-
 
     /**
      * 메인 UI를 페이지에 주입(생성)하는 함수다.
@@ -390,12 +431,9 @@ ThemePark.ui = {
     injectUI() {
         if (document.querySelector('.theme-park-container')) return;
 
-        const container = document.createElement('div');
-        container.className = 'theme-park-container';
-        container.innerHTML = this._getUI_HTML(); // HTML 구조를 가져와 삽입한다.
+        const container = this._createElement('div', { className: 'theme-park-container', html: this._getUI_HTML() });
         document.body.appendChild(container);
 
-        // UI에 필요한 이벤트 리스너들을 설정한다.
         this._setupTabNavigation(container);
         this._setupConsentLogic(container);
     },
@@ -403,29 +441,26 @@ ThemePark.ui = {
     /**
      * 사용자의 동의 여부에 따라 UI를 다르게 처리하는 로직이다.
      */
-    _setupConsentLogic(container) {
-        chrome.storage.sync.get('hasConsented', ({hasConsented}) => {
-            if (hasConsented) {
-                // 동의했다면 모든 UI를 활성화한다.
-                this._setupFullUI(container);
+    async _setupConsentLogic(container) { // async 추가
+        const { hasConsented, appVersion } = await ThemePark.storage.get(['hasConsented', 'appVersion']);
+
+        if (hasConsented) {
+            this._setupFullUI(container);
+            container.querySelector('.consent-section').innerHTML = `<div id="already-consented-msg" style="font-size: 13px; color: #8e8e93;">고지 사항에 동의하셨습니다.</div>`;
+        } else {
+            container.classList.add('consent-pending');
+            this._openTab('info', container);
+            const consentCheckbox = container.querySelector('#consent-checkbox');
+            const consentAgreeBtn = container.querySelector('#consent-agree-btn');
+            consentCheckbox.addEventListener('change', () => consentAgreeBtn.disabled = !consentCheckbox.checked);
+            consentAgreeBtn.addEventListener('click', async () => { // async 추가
+                await ThemePark.storage.set({ hasConsented: true, appVersion: ThemePark.state.CURRENT_VERSION });
+                this.showDynamicToast({ title: '동의해주셔서 감사합니다!', details: '모든 기능이 활성화됩니다.', icon: '✅' });
+                container.classList.remove('consent-pending');
                 container.querySelector('.consent-section').innerHTML = `<div id="already-consented-msg" style="font-size: 13px; color: #8e8e93;">고지 사항에 동의하셨습니다.</div>`;
-            } else {
-                // 동의하지 않았다면 정보 탭만 활성화하고 동의를 유도한다.
-                container.classList.add('consent-pending');
-                this._openTab('info', container);
-                const consentCheckbox = container.querySelector('#consent-checkbox');
-                const consentAgreeBtn = container.querySelector('#consent-agree-btn');
-                consentCheckbox.addEventListener('change', () => consentAgreeBtn.disabled = !consentCheckbox.checked);
-                consentAgreeBtn.addEventListener('click', () => {
-                    chrome.storage.sync.set({ hasConsented: true, appVersion: ThemePark.state.CURRENT_VERSION }, () => {
-                        this.showDynamicToast({title: '동의해주셔서 감사합니다!', details: '모든 기능이 활성화됩니다.', icon: '✅'});
-                        container.classList.remove('consent-pending');
-                        container.querySelector('.consent-section').innerHTML = `<div id="already-consented-msg" style="font-size: 13px; color: #8e8e93;">고지 사항에 동의하셨습니다.</div>`;
-                        this._setupFullUI(container);
-                    });
-                });
-            }
-        });
+                this._setupFullUI(container);
+            });
+        }
     },
 
     /**
@@ -433,8 +468,7 @@ ThemePark.ui = {
      */
     showIntroScreen() {
         document.getElementById('theme-park-intro')?.remove();
-        const introDiv = document.createElement('div');
-        introDiv.id = 'theme-park-intro';
+        const introDiv = this._createElement('div', { id: 'theme-park-intro' });
         introDiv.innerHTML = `
             <div class="intro-content">
                 <div class="intro-emoji-container"><span class="intro-emoji">✨</span><div class="fireworks-container"></div></div>
@@ -443,24 +477,26 @@ ThemePark.ui = {
                 <button id="start-button">시작하기</button>
             </div>`;
         document.body.appendChild(introDiv);
-        
-        // 간단한 불꽃놀이 효과를 추가한다.
+
         const fireworksContainer = introDiv.querySelector('.fireworks-container');
         const colors = ['#FFC107', '#FF5722', '#E91E63', '#9C27B0', '#3F51B5', '#03A9F4', '#00BCD4', '#4CAF50'];
-        function createFirework() {
-            const firework = document.createElement('div');
-            firework.className = 'firework';
-            firework.style.left = `${Math.random() * 100}%`;
-            firework.style.top = `${Math.random() * 100}%`;
-            firework.style.color = colors[Math.floor(Math.random() * colors.length)];
-            firework.style.setProperty('--dx', `${(Math.random() - 0.5) * 200}px`);
-            firework.style.setProperty('--dy', `${(Math.random() - 0.5) * 200}px`);
+
+        const createFirework = () => {
+            const firework = this._createElement('div', {
+                className: 'firework',
+                style: {
+                    left: `${Math.random() * 100}%`,
+                    top: `${Math.random() * 100}%`,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    '--dx': `${(Math.random() - 0.5) * 200}px`,
+                    '--dy': `${(Math.random() - 0.5) * 200}px`
+                }
+            });
             fireworksContainer.appendChild(firework);
-            firework.addEventListener('animationend', () => firework.remove());
-        }
+            firework.addEventListener('animationend', () => firework.remove(), { once: true });
+        };
         const fireworkInterval = setInterval(createFirework, 150);
 
-        // 시작 버튼을 누르면 인트로 화면이 사라지고 메인 UI가 나타난다.
         const startButton = document.getElementById('start-button');
         startButton.addEventListener('click', () => {
             clearInterval(fireworkInterval);
@@ -491,43 +527,41 @@ ThemePark.ui = {
             return;
         }
 
-        // 저장된 데이터를 기반으로 목록 HTML을 생성한다.
         listElement.innerHTML = plotIds.map(plotId => {
             const item = allSaves[plotId];
+            const saveName = (item.name || '제목 없음');
             return `
-                <li data-savename="${(item.name || '제목 없음').toLowerCase()}">
-                    <div class="save-info"><span class="save-name">${item.name || '제목 없음'}</span><span class="save-time">${new Date(item.timestamp).toLocaleString()}</span></div>
+                <li data-savename="${saveName.toLowerCase()}">
+                    <div class="save-info"><span class="save-name">${saveName}</span><span class="save-time">${new Date(item.timestamp).toLocaleString()}</span></div>
                     <div class="save-actions" data-plot-id="${plotId}"><button class="load-btn">불러오기</button><button class="delete-btn">삭제</button></div>
                 </li>`;
         }).join('');
-        
-        // 검색창에 입력할 때마다 목록을 필터링한다.
-        searchInput.addEventListener('input', (e) => {
+
+        // 기존 이벤트 리스너 제거 및 재부착 방지를 위해 이벤트 위임 사용
+        // searchInput은 한 번만 부착하면 됨
+        searchInput.oninput = (e) => { // oninput 직접 할당하여 이전 리스너 제거 효과
             const searchTerm = e.target.value.toLowerCase();
             listElement.querySelectorAll('li').forEach(li => {
-                // li 요소의 data-savename 속성을 사용하여 검색한다.
                 if (li.dataset.savename.includes(searchTerm)) {
                     li.style.display = 'flex';
                 } else {
                     li.style.display = 'none';
                 }
             });
-        });
+        };
 
-        // 불러오기/삭제 버튼에 대한 이벤트 리스너 (이벤트 위임 사용)
-        listElement.addEventListener('click', (e) => {
+        // 이벤트 위임: listElement에 클릭 이벤트 리스너 하나만 추가
+        listElement.onclick = async (e) => { // async 추가
             const plotId = e.target.closest('.save-actions')?.dataset.plotId;
             if (!plotId) return;
 
             const item = allSaves[plotId];
             if (e.target.classList.contains('load-btn')) {
                 console.log(`[ThemePark UI] 자동 저장된 내용 불러오기 시도: plotId=${plotId}`);
-                // 현재 페이지가 해당 캐릭터 수정 페이지면 바로 복원한다.
                 if (window.location.pathname.includes(`/plots/${plotId}/edit`)) {
                     ThemePark.features.restoreFromData(item.formData);
                 } else if (confirm(`'${item.name}' 수정 페이지로 이동하여 복원하시겠습니까?`)) {
-                    // 다른 페이지면 이동 후 복원하도록 sessionStorage에 데이터를 저장한다.
-                    sessionStorage.setItem('zeta-restore-data', JSON.stringify({ plotId, formData: item.formData }));
+                    await ThemePark.storage.setLocal({ 'zeta-restore-data': JSON.stringify({ plotId, formData: item.formData }) });
                     window.location.href = `/ko/plots/${plotId}/edit`;
                 }
             } else if (e.target.classList.contains('delete-btn')) {
@@ -541,10 +575,10 @@ ThemePark.ui = {
                     console.log(`[ThemePark UI] 자동 저장된 내용 삭제 취소: plotId=${plotId}`);
                 }
             }
-        });
+        };
         console.log("[ThemePark UI] 자동 저장 목록 불러오기 완료.");
     },
-    
+
     /**
      * 색상 선택기(color picker)들의 값을 주어진 설정값으로 업데이트하는 함수다.
      */
@@ -554,7 +588,7 @@ ThemePark.ui = {
             picker.value = settings[picker.dataset.key] || '#000000';
         });
     },
-    
+
     /**
      * 커스텀 테마 관련 컨트롤들을 활성화/비활성화하는 함수다.
      */
@@ -569,31 +603,19 @@ ThemePark.ui = {
             section.classList.remove('disabled', 'collapsed');
         } else {
             if (!section.classList.contains('disabled')) {
-                this.showDynamicToast({ title: '알림', details: '색상 팔레트는 "사용자 설정" 테마에서만 활성화됩니다.', icon: '🎨', duration: 4000 });
+                this.showDynamicToast({ title: '알림', details: '색상 팔레트는 "사용자 설정" 테마에서만 활성화됩니다.', icon: '🎨', duration: ThemePark.config.TOAST_DURATION_LONG });
             }
             section.classList.add('disabled', 'collapsed');
         }
     },
-    
-    /**
-     * 이벤트를 일정 시간 지연시켜 과도한 호출을 막는 디바운스 함수다.
-     */
-    _debounce(func, delay) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), delay);
-        };
-    },
 
-    // --- 내부 헬퍼 함수들 --- 
     // 모든 UI 기능을 설정하고 이벤트를 연결하는 메인 함수다.
     _setupFullUI(container) {
         console.log("[ThemePark UI] 전체 UI 설정 시작.");
         this._setupMainControls();
         this._setupGeneralControls();
         this._setupCustomThemeControls();
-        this._loadAndApplyAllSettings(); // 저장된 모든 설정을 불러와 적용한다.
+        this._loadAndApplyAllSettings();
         this.populateAutoSaveList();
         console.log("[ThemePark UI] 전체 UI 설정 완료.");
     },
@@ -606,9 +628,8 @@ ThemePark.ui = {
             const item = e.target.closest('.toolbar-item');
             if (!item) return;
 
-            // 동의 전에는 정보 탭 외에 다른 탭을 열 수 없다.
             if (container.classList.contains('consent-pending') && !item.dataset.tab.includes('info')) {
-                this.showDynamicToast({title: '동의 필요', details: '먼저 고지 사항에 동의해주세요.', icon: '✋'});
+                this.showDynamicToast({ title: '동의 필요', details: '먼저 고지 사항에 동의해주세요.', icon: '✋' });
                 console.log("[ThemePark UI] 동의 필요: 정보 탭 외 접근 차단.");
                 return;
             }
@@ -620,8 +641,7 @@ ThemePark.ui = {
                 this._openTab(targetTabId, container);
             }
         });
-        
-        // 닫기 버튼(X)을 누르면 탭이 닫힌다.
+
         container.querySelectorAll('.close-tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const tabId = e.target.closest('.tab-pane').id.replace('-tab', '');
@@ -630,7 +650,6 @@ ThemePark.ui = {
             });
         });
 
-        // 섹션 헤더를 누르면 내용이 접혔다 펴진다.
         container.querySelectorAll('.setting-section .section-header').forEach(header => {
             header.addEventListener('click', (e) => {
                 const section = e.currentTarget.closest('.setting-section');
@@ -647,55 +666,47 @@ ThemePark.ui = {
 
     _openTab(tabId, container) {
         console.log(`[ThemePark UI] 탭 열기: ${tabId}`);
-        // 모든 툴바 아이템과 탭 패널의 활성 상태 제거
         container.querySelectorAll('.toolbar-item').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
 
-        // 선택된 툴바 아이템 활성화
         container.querySelector(`.toolbar-item[data-tab="${tabId}"]`)?.classList.add('active');
 
-        // 선택된 탭 패널 활성화
         const activeTabPane = document.querySelector(`#${tabId}-tab`);
         if (activeTabPane) {
             activeTabPane.classList.add('active');
         }
 
-        // 컨테이너에 'tab-active' 클래스를 추가하여 CSS 변형을 트리거
-        container.classList.add('tab-active'); // [코드 수정] 이 부분은 이미 추가되어 있지만 다시 확인
+        container.classList.add('tab-active');
     },
 
     _closeTab(tabId, container) {
         console.log(`[ThemePark UI] 탭 닫기: ${tabId}`);
-        // 선택된 툴바 아이템 비활성화
         container.querySelector(`.toolbar-item[data-tab="${tabId}"]`)?.classList.remove('active');
 
-        // 선택된 탭 패널 비활성화
         const activeTabPane = document.querySelector(`#${tabId}-tab`);
         if (activeTabPane) {
             activeTabPane.classList.remove('active');
         }
 
-        // 활성화된 탭이 하나도 없으면 컨테이너에서 'tab-active' 클래스를 제거하여 원래 위치로 되돌림
         if (!container.querySelector('.toolbar-item.active')) {
-            container.classList.remove('tab-active'); // [코드 수정] 이 부분은 이미 추가되어 있지만 다시 확인
+            container.classList.remove('tab-active');
         }
     },
 
     _setupMainControls() {
         console.log("[ThemePark UI] 메인 컨트롤 설정 시작.");
         const themeSelect = document.getElementById('theme-select');
-        themeSelect.addEventListener('change', () => {
+        themeSelect.addEventListener('change', async () => { // async 추가
             const theme = themeSelect.value;
             const themeName = themeSelect.options[themeSelect.selectedIndex].text;
             const compactCheck = document.getElementById('compact-mode-check');
             const compactLabel = compactCheck.closest('.layout-toggle');
-            
+
             console.log(`[ThemePark UI] 테마 변경 요청: ${theme}`);
-            chrome.storage.sync.set({ selectedTheme: theme });
+            await ThemePark.storage.set({ selectedTheme: theme });
             ThemePark.features.clearAllThemeStyles();
-            this.showDynamicToast({ title: '테마 변경', details: `'${themeName}' 테마가 적용되었습니다.`, icon: '🎨'});
-            
-            // 디코 테마에서는 컴팩트 모드를 비활성화한다.
+            this.showDynamicToast({ title: '테마 변경', details: `'${themeName}' 테마가 적용되었습니다.`, icon: '🎨' });
+
             if (theme === 'discord') {
                 console.log("[ThemePark UI] 디코 테마: 컴팩트 모드 비활성화.");
                 compactCheck.disabled = true;
@@ -712,53 +723,47 @@ ThemePark.ui = {
             if (theme === 'custom') {
                 console.log("[ThemePark UI] 사용자 설정 테마 선택됨. 커스텀 테마 컨트롤 활성화.");
                 this.toggleCustomThemeControls(true);
-                // 커스텀 테마일 경우 저장된 설정을 불러와 적용한다.
-                chrome.storage.local.get(['customThemeSettings', 'backgroundEffectSettings'], ({customThemeSettings, backgroundEffectSettings}) => {
-                    const settings = { ...ThemePark.config.defaultCustomSettings, ...customThemeSettings };
-                    ThemePark.features.applyCustomTheme(settings);
-                    ThemePark.features.applyCustomScrollbarStyles(settings);
-                    ThemePark.features.applyBackgroundEffect(backgroundEffectSettings || {}, settings.mainBgColor);
-                });
+                const { customThemeSettings, backgroundEffectSettings } = await ThemePark.storage.getLocal(['customThemeSettings', 'backgroundEffectSettings']);
+                const settings = { ...ThemePark.config.defaultCustomSettings, ...customThemeSettings };
+                ThemePark.features.applyCustomTheme(settings);
+                ThemePark.features.applyCustomScrollbarStyles(settings);
+                ThemePark.features.applyBackgroundEffect(backgroundEffectSettings || {}, settings.mainBgColor);
             } else {
                 console.log("[ThemePark UI] 기본 테마 또는 정적 테마 선택됨. 커스텀 테마 컨트롤 비활성화.");
                 this.toggleCustomThemeControls(false);
                 if (theme !== 'default') {
-                    // 기본 테마가 아니면 해당 CSS 파일을 적용한다.
                     ThemePark.features.applyStaticTheme(theme);
                 }
             }
             this._updateLayoutFromUI();
         });
-        
+
         document.getElementById('img2tag-btn').addEventListener('click', this._handleImg2Tag.bind(this));
-        
-        // '캐릭터 랭킹' 버튼 클릭 이벤트 리스너 추가
+
         document.getElementById('show-ranking-btn').addEventListener('click', () => {
             console.log("[ThemePark UI] '캐릭터 랭킹' 버튼 클릭됨.");
-            ThemePark.features.fetchAndDisplayRankings(); // 랭킹 데이터를 가져오고 표시하는 함수 호출
+            ThemePark.features.fetchAndDisplayRankings();
         });
 
-        // AI 기능 버튼들에 대한 이벤트 리스너 설정
-        const createChatTextHandler = (apiFunction) => () => {
+        const createChatTextHandler = (apiFunction) => async () => { // async 추가
             const chatContainer = document.querySelector('.flex.h-0.min-h-0.flex-1');
             if (!chatContainer) {
-                this.showDynamicToast({title: '오류', details: '분석할 대화가 없습니다.', icon: '⚠️'});
+                this.showDynamicToast({ title: '오류', details: '분석할 대화가 없습니다.', icon: '⚠️' });
                 console.warn("[ThemePark UI] 대화 분석을 위한 채팅 컨테이너를 찾을 수 없습니다.");
                 return;
             }
-            
+
             const messages = Array.from(chatContainer.querySelectorAll('.body16.whitespace-pre-wrap'));
-            // API 토큰 제한을 고려하여 최근 텍스트만 잘라낸다.
-            const chatText = messages.map(m => m.innerText).join('\n').slice(-8000);
+            const chatText = messages.map(m => m.innerText).join('\n').slice(-8000); // API 토큰 제한 고려
             if (!chatText) {
-                this.showDynamicToast({title: '오류', details: '분석할 텍스트가 없습니다.', icon: '⚠️'});
+                this.showDynamicToast({ title: '오류', details: '분석할 텍스트가 없습니다.', icon: '⚠️' });
                 console.warn("[ThemePark UI] 대화 분석을 위한 텍스트를 찾을 수 없습니다.");
                 return;
             }
             console.log(`[ThemePark UI] 대화 분석 요청: ${apiFunction.name}`);
-            apiFunction(chatText);
+            await apiFunction(chatText); // await 추가
         };
-        
+
         document.getElementById('summarize-chat-btn').addEventListener('click', createChatTextHandler(ThemePark.api.summarizeChat.bind(ThemePark.api)));
         document.getElementById('analyze-style-btn').addEventListener('click', createChatTextHandler(ThemePark.api.analyzeChatStyle.bind(ThemePark.api)));
         document.getElementById('open-translator-btn').addEventListener('click', () => {
@@ -767,72 +772,70 @@ ThemePark.ui = {
         });
         console.log("[ThemePark UI] 메인 컨트롤 설정 완료.");
     },
-    
-    _handleImg2Tag() {
+
+    async _handleImg2Tag() { // async 추가
         console.log("[ThemePark UI] Img2Tag 버튼 클릭됨.");
-        navigator.clipboard.readText().then(text => {
+        try {
+            const text = await navigator.clipboard.readText();
             const urlMatch = text.match(/^(https:\/\/image\.zeta-ai\.io\/[^\?]+)/);
             if (!urlMatch) {
-                this.showDynamicToast({ 
-                    title: '클립보드 오류', 
-                    details: '클립보드에 유효한 Zeta 이미지 URL이 없습니다. 이미지 주소를 복사하여 다시 시도해주세요.', 
-                    icon: '📋', 
-                    duration: 5000 
+                this.showDynamicToast({
+                    title: '클립보드 오류',
+                    details: '클립보드에 유효한 Zeta 이미지 URL이 없습니다. 이미지 주소를 복사하여 다시 시도해주세요.',
+                    icon: '📋',
+                    duration: ThemePark.config.TOAST_DURATION_API_ERROR
                 });
                 console.warn("[ThemePark UI] Img2Tag: 클립보드에 유효한 이미지 URL이 없습니다.");
                 return;
             }
             const imageUrl = urlMatch[1];
             console.log(`[ThemePark UI] Img2Tag: 이미지 URL 감지됨: ${imageUrl}`);
-             // Image2Tag API 호출
             const promptPromise = ThemePark.api.generateTagsFromImage(imageUrl);
             this.showImg2TagModal(imageUrl, promptPromise);
-        }).catch(err => {
-            this.showDynamicToast({ 
-                title: '클립보드 읽기 오류', 
-                details: '클립보드 접근 권한이 없거나, 다른 오류가 발생했습니다: ' + err.message, 
-                icon: '❌', 
-                duration: 5000 
+        } catch (err) {
+            this.showDynamicToast({
+                title: '클립보드 읽기 오류',
+                details: '클립보드 접근 권한이 없거나, 다른 오류가 발생했습니다: ' + err.message,
+                icon: '❌',
+                duration: ThemePark.config.TOAST_DURATION_API_ERROR
             });
             console.error("[ThemePark UI] Img2Tag: 클립보드 읽기 오류:", err);
-        });
+        }
     },
 
     _setupGeneralControls() {
         console.log("[ThemePark UI] 일반 컨트롤 설정 시작.");
-        // 레이아웃 설정이 변경될 때마다 디바운스를 적용하여 스타일을 업데이트한다.
-        const debouncedLayoutUpdate = this._debounce(this._updateLayoutFromUI.bind(this), 200);
+        const debouncedLayoutUpdate = ThemePark.utils.debounce(this._updateLayoutFromUI.bind(this), 200);
         document.getElementById('layout-settings-wrapper').addEventListener('input', debouncedLayoutUpdate);
 
         const apiKeyInput = document.getElementById('gemini-api-key');
-        apiKeyInput.addEventListener('change', () => {
+        apiKeyInput.addEventListener('change', async () => { // async 추가
             console.log("[ThemePark UI] Gemini API 키 변경 감지됨.");
-            chrome.storage.sync.set({ geminiApiKey: apiKeyInput.value }, () => {
-                ThemePark.api.validateGeminiKey(apiKeyInput.value);
-            });
+            await ThemePark.storage.set({ geminiApiKey: apiKeyInput.value });
+            ThemePark.api.validateGeminiKey(apiKeyInput.value);
         });
 
-        document.getElementById('gemini-model-select').addEventListener('change', (e) => {
+        document.getElementById('gemini-model-select').addEventListener('change', async (e) => { // async 추가
             console.log(`[ThemePark UI] Gemini 모델 변경 감지됨: ${e.target.value}`);
-            chrome.storage.sync.set({ geminiModel: e.target.value });
+            await ThemePark.storage.set({ geminiModel: e.target.value });
         });
 
-        document.getElementById('ai-settings-wrapper').addEventListener('change', () => {
+        document.getElementById('ai-settings-wrapper').addEventListener('change', async () => { // async 추가
             const aiPromptSettings = {
                 length: document.querySelector('input[name="prompt-length"]:checked').value,
                 include: document.getElementById('prompt-include').value,
                 exclude: document.getElementById('prompt-exclude').value,
             };
             console.log("[ThemePark UI] AI 프롬프트 설정 변경 감지됨:", aiPromptSettings);
-            chrome.storage.sync.set({ aiPromptSettings });
+            await ThemePark.storage.set({ aiPromptSettings });
         });
 
-        document.getElementById('reset-all-data-btn').addEventListener('click', () => {
+        document.getElementById('reset-all-data-btn').addEventListener('click', async () => { // async 추가
             console.log("[ThemePark UI] '모든 설정 및 데이터 초기화' 버튼 클릭됨.");
             if (confirm("정말 모든 설정과 데이터를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) {
                 console.warn("[ThemePark UI] 모든 설정 및 데이터 초기화 진행...");
-                chrome.storage.sync.clear();
-                chrome.storage.local.clear();
+                await ThemePark.storage.clearSync(); // storage 헬퍼 사용
+                await ThemePark.storage.clearLocal(); // storage 헬퍼 사용
                 localStorage.removeItem('zeta-all-autosaves');
                 window.location.reload();
             } else {
@@ -845,37 +848,32 @@ ThemePark.ui = {
     _setupCustomThemeControls() {
         console.log("[ThemePark UI] 커스텀 테마 컨트롤 설정 시작.");
         const customTab = document.getElementById('custom-tab');
-        
-        // 색상 선택기가 변경될 때마다 디바운스를 적용하여 실시간으로 테마를 업데이트한다.
-        const debouncedColorUpdate = this._debounce(e => {
+
+        const debouncedColorUpdate = ThemePark.utils.debounce(async e => { // async 추가
             console.log(`[ThemePark UI] 색상 변경 감지됨: ${e.target.dataset.key} = ${e.target.value}`);
-            chrome.storage.local.get(['customThemeSettings', 'backgroundEffectSettings'], ({customThemeSettings, backgroundEffectSettings}) => {
-                const newSettings = { ...ThemePark.config.defaultCustomSettings, ...(customThemeSettings || {}), [e.target.dataset.key]: e.target.value };
-                chrome.storage.local.set({ customThemeSettings: newSettings }, () => {
-                    if (document.getElementById('theme-select').value === 'custom') {
-                        ThemePark.features.applyCustomTheme(newSettings);
-                        ThemePark.features.applyCustomScrollbarStyles(newSettings);
-                        // 배경 효과 설정이 있다면 배경색을 업데이트한다.
-                        if (backgroundEffectSettings) {
-                            ThemePark.features.applyBackgroundEffect(backgroundEffectSettings, newSettings.mainBgColor);
-                        }
-                    }
-                });
-            });
+            const { customThemeSettings, backgroundEffectSettings } = await ThemePark.storage.getLocal(['customThemeSettings', 'backgroundEffectSettings']);
+            const newSettings = { ...ThemePark.config.defaultCustomSettings, ...(customThemeSettings || {}), [e.target.dataset.key]: e.target.value };
+            await ThemePark.storage.setLocal({ customThemeSettings: newSettings });
+            if (document.getElementById('theme-select').value === 'custom') {
+                ThemePark.features.applyCustomTheme(newSettings);
+                ThemePark.features.applyCustomScrollbarStyles(newSettings);
+                if (backgroundEffectSettings) {
+                    ThemePark.features.applyBackgroundEffect(backgroundEffectSettings, newSettings.mainBgColor);
+                }
+            }
         }, 100);
         customTab.querySelector('#color-palette-section').addEventListener('input', e => {
             if (e.target.type === 'color') {
                 debouncedColorUpdate(e);
             }
         });
-        
-        // 배경 효과 설정 (라디오 버튼 및 체크박스)
+
         const backgroundEffectSection = customTab.querySelector('#background-effect-section .section-content');
-        backgroundEffectSection.addEventListener('change', () => {
+        backgroundEffectSection.addEventListener('change', async () => { // async 추가
             const lightEffect = document.querySelector('input[name="light-effect"]:checked')?.value || 'none';
             const environmentEffect = document.querySelector('input[name="environment-effect"]:checked')?.value || 'none';
             const weatherEffect = document.querySelector('input[name="weather-effect"]:checked')?.value || 'none';
-            
+
             const particleStars = document.getElementById('particle-stars-check').checked;
             const particleFireflies = document.getElementById('particle-fireflies-check').checked;
             const particleSakura = document.getElementById('particle-sakura-check').checked;
@@ -899,44 +897,41 @@ ThemePark.ui = {
                 particleMeteors
             };
             console.log("[ThemePark UI] 배경 효과 설정 변경 감지됨:", backgroundEffectSettings);
-            chrome.storage.sync.set({ backgroundEffectSettings });
+            await ThemePark.storage.set({ backgroundEffectSettings });
 
-            chrome.storage.local.get('customThemeSettings', ({customThemeSettings}) => {
-                const currentBgColor = (customThemeSettings && customThemeSettings.mainBgColor) || ThemePark.config.defaultCustomSettings.mainBgColor;
-                ThemePark.features.applyBackgroundEffect(backgroundEffectSettings, currentBgColor);
-            });
+            const { customThemeSettings } = await ThemePark.storage.getLocal('customThemeSettings');
+            const currentBgColor = (customThemeSettings && customThemeSettings.mainBgColor) || ThemePark.config.defaultCustomSettings.mainBgColor;
+            ThemePark.features.applyBackgroundEffect(backgroundEffectSettings, currentBgColor);
         });
-        
-        // AI 팔레트 생성 및 테마 관리 버튼들의 이벤트 리스너
-        customTab.querySelector('#color-palette-section .custom-actions').addEventListener('click', e => {
+
+        customTab.querySelector('#color-palette-section .custom-actions').addEventListener('click', async e => { // async 추가
             if (e.target.tagName !== 'BUTTON') return;
             const targetId = e.target.id;
             console.log(`[ThemePark UI] 색상 팔레트 액션 버튼 클릭: ${targetId}`);
-            switch(targetId) {
+            switch (targetId) {
                 case 'generate-palette-btn':
                     const prompt = document.getElementById('palette-prompt').value;
-                    if(prompt) ThemePark.api.generatePaletteWithGemini(prompt);
+                    if (prompt) await ThemePark.api.generatePaletteWithGemini(prompt); // await 추가
                     else {
-                        this.showDynamicToast({title: '프롬프트 필요', details: '원하는 팔레트를 설명해주세요.', icon: '🎨'});
+                        this.showDynamicToast({ title: '프롬프트 필요', details: '원하는 팔레트를 설명해주세요.', icon: '🎨' });
                         console.warn("[ThemePark UI] 팔레트 생성 프롬프트가 비어있습니다.");
                     }
                     break;
                 case 'revert-theme-btn':
                     if (ThemePark.state.previousCustomThemeSettings) {
                         console.log("[ThemePark UI] 테마 되돌리기 시도.");
-                        chrome.storage.local.set({ customThemeSettings: ThemePark.state.previousCustomThemeSettings }, () => {
-                            if (document.getElementById('theme-select').value === 'custom') {
-                               ThemePark.features.applyCustomTheme(ThemePark.state.previousCustomThemeSettings);
-                               ThemePark.features.applyCustomScrollbarStyles(ThemePark.state.previousCustomThemeSettings);
-                            }
-                            this.updateColorPickers(ThemePark.state.previousCustomThemeSettings);
-                            ThemePark.state.previousCustomThemeSettings = null;
-                            this.showDynamicToast({title: '되돌리기 성공', icon: '⏪'});
-                            console.log("[ThemePark UI] 테마 되돌리기 완료.");
-                        });
+                        await ThemePark.storage.setLocal({ customThemeSettings: ThemePark.state.previousCustomThemeSettings });
+                        if (document.getElementById('theme-select').value === 'custom') {
+                            ThemePark.features.applyCustomTheme(ThemePark.state.previousCustomThemeSettings);
+                            ThemePark.features.applyCustomScrollbarStyles(ThemePark.state.previousCustomThemeSettings);
+                        }
+                        this.updateColorPickers(ThemePark.state.previousCustomThemeSettings);
+                        ThemePark.state.previousCustomThemeSettings = null;
+                        this.showDynamicToast({ title: '되돌리기 성공', icon: '⏪' });
+                        console.log("[ThemePark UI] 테마 되돌리기 완료.");
                     } else {
                         console.log("[ThemePark UI] 되돌릴 이전 테마 설정이 없습니다.");
-                        this.showDynamicToast({title: '알림', details: '되돌릴 이전 테마 설정이 없습니다.', icon: '🤔'});
+                        this.showDynamicToast({ title: '알림', details: '되돌릴 이전 테마 설정이 없습니다.', icon: '🤔' });
                     }
                     break;
                 case 'reset-theme-btn':
@@ -953,19 +948,18 @@ ThemePark.ui = {
                     break;
             }
         });
-        
-        // 눈 보호 모드 슬라이더에 디바운스를 적용한다.
-        const debouncedEyeSaverUpdate = this._debounce(() => {
+
+        const debouncedEyeSaverUpdate = ThemePark.utils.debounce(async () => { // async 추가
             const enabled = document.getElementById('eye-saver-check').checked;
             const strength = document.getElementById('eye-saver-strength-slider').value;
             console.log(`[ThemePark UI] Eye Saver 설정 변경: 활성화=${enabled}, 강도=${strength}`);
             ThemePark.features.updateEyeSaver(enabled, strength);
-            chrome.storage.sync.set({ eyeSaverSettings: { enabled, strength }});
+            await ThemePark.storage.set({ eyeSaverSettings: { enabled, strength } });
         }, 150);
         document.getElementById('eye-saver-section').addEventListener('input', debouncedEyeSaverUpdate);
         console.log("[ThemePark UI] 커스텀 테마 컨트롤 설정 완료.");
     },
-    
+
     _updateLayoutFromUI() {
         console.log("[ThemePark UI] 레이아웃 UI에서 업데이트 시작.");
         const layoutSettings = {
@@ -976,119 +970,110 @@ ThemePark.ui = {
         };
         console.log("[ThemePark UI] 적용할 레이아웃 설정:", layoutSettings);
         ThemePark.features.updateLayoutStyles(layoutSettings);
-        chrome.storage.sync.set({ layoutSettings });
+        ThemePark.storage.set({ layoutSettings });
         console.log("[ThemePark UI] 레이아웃 UI에서 업데이트 완료.");
     },
 
-    _loadAndApplyAllSettings() {
+    async _loadAndApplyAllSettings() { // async 추가
         const keys = ['selectedTheme', 'fontFamily', 'layoutSettings', 'geminiApiKey', 'geminiModel', 'aiPromptSettings', 'eyeSaverSettings', 'backgroundEffectSettings'];
-        // [수정: rankingHistory를 storage.local에서 불러오도록 keys에 추가]
         const localKeys = ['customThemeSettings', 'rankingHistory']; // rankingHistory는 local storage에 저장됨
 
-        chrome.storage.sync.get(keys, data => {
-            if (data.selectedTheme) {
-                const themeSelect = document.getElementById('theme-select');
-                themeSelect.value = data.selectedTheme;
-                themeSelect.dispatchEvent(new Event('change'));
-            } else {
-                this.toggleCustomThemeControls(false);
-            }
+        const syncData = await ThemePark.storage.get(keys);
+        const localData = await ThemePark.storage.getLocal(localKeys);
 
-            if (data.fontFamily) {
-                document.getElementById('font-select').value = data.fontFamily;
-                ThemePark.features.updateFont(data.fontFamily);
-            }
+        if (syncData.selectedTheme) {
+            const themeSelect = document.getElementById('theme-select');
+            themeSelect.value = syncData.selectedTheme;
+            // 직접 change 이벤트를 발생시켜 _setupMainControls의 로직을 트리거
+            themeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        } else {
+            this.toggleCustomThemeControls(false);
+        }
 
-            if (data.layoutSettings) {
-                document.getElementById('font-size-slider').value = data.layoutSettings.fontSize || 15;
-                document.getElementById('animation-check').checked = !!data.layoutSettings.animation;
-                document.getElementById('compact-mode-check').checked = !!data.layoutSettings.compactMode;
-                document.getElementById('hide-avatars-check').checked = !!data.layoutSettings.hideAvatars;
-                this._updateLayoutFromUI();
-            }
+        if (syncData.fontFamily) {
+            document.getElementById('font-select').value = syncData.fontFamily;
+            ThemePark.features.updateFont(syncData.fontFamily);
+        }
 
-            if (data.geminiApiKey) {
-                document.getElementById('gemini-api-key').value = data.geminiApiKey;
-                ThemePark.api.validateGeminiKey(data.geminiApiKey);
-            }
+        if (syncData.layoutSettings) {
+            document.getElementById('font-size-slider').value = syncData.layoutSettings.fontSize || 15;
+            document.getElementById('animation-check').checked = !!syncData.layoutSettings.animation;
+            document.getElementById('compact-mode-check').checked = !!syncData.layoutSettings.compactMode;
+            document.getElementById('hide-avatars-check').checked = !!syncData.layoutSettings.hideAvatars;
+            this._updateLayoutFromUI();
+        }
 
-            if(data.geminiModel) {
-                document.getElementById('gemini-model-select').value = data.geminiModel;
-            }
+        if (syncData.geminiApiKey) {
+            document.getElementById('gemini-api-key').value = syncData.geminiApiKey;
+            ThemePark.api.validateGeminiKey(syncData.geminiApiKey);
+        }
 
-            if(data.aiPromptSettings) {
-                const lengthRadio = document.querySelector(`input[name="prompt-length"][value="${data.aiPromptSettings.length}"]`);
-                if(lengthRadio) lengthRadio.checked = true;
-                document.getElementById('prompt-include').value = data.aiPromptSettings.include || '';
-                document.getElementById('prompt-exclude').value = data.aiPromptSettings.exclude || '';
-            }
+        if (syncData.geminiModel) {
+            document.getElementById('gemini-model-select').value = syncData.geminiModel;
+        }
 
-            if (data.eyeSaverSettings) {
-                document.getElementById('eye-saver-check').checked = data.eyeSaverSettings.enabled;
-                document.getElementById('eye-saver-strength-slider').value = data.eyeSaverSettings.strength;
-                ThemePark.features.updateEyeSaver(data.eyeSaverSettings.enabled, data.eyeSaverSettings.strength);
-            }
+        if (syncData.aiPromptSettings) {
+            const lengthRadio = document.querySelector(`input[name="prompt-length"][value="${syncData.aiPromptSettings.length}"]`);
+            if (lengthRadio) lengthRadio.checked = true;
+            document.getElementById('prompt-include').value = syncData.aiPromptSettings.include || '';
+            document.getElementById('prompt-exclude').value = syncData.aiPromptSettings.exclude || '';
+        }
 
-            // 배경 효과 설정 로드 및 적용
-            if (data.backgroundEffectSettings) {
-                document.querySelector(`input[name="light-effect"][value="${data.backgroundEffectSettings.lightEffect || 'none'}"]`).checked = true;
-                document.querySelector(`input[name="environment-effect"][value="${data.backgroundEffectSettings.environmentEffect || 'none'}"]`).checked = true;
-                document.querySelector(`input[name="weather-effect"][value="${data.backgroundEffectSettings.weatherEffect || 'none'}"]`).checked = true;
-                
-                document.getElementById('particle-stars-check').checked = !!data.backgroundEffectSettings.particleStars;
-                document.getElementById('particle-fireflies-check').checked = !!data.backgroundEffectSettings.particleFireflies;
-                document.getElementById('particle-sakura-check').checked = !!data.backgroundEffectSettings.particleSakura;
-                document.getElementById('particle-leaves-check').checked = !!data.backgroundEffectSettings.particleLeaves;
-                document.getElementById('particle-fireworks-check').checked = !!data.backgroundEffectSettings.particleFireworks;
-                document.getElementById('particle-shooting-stars-check').checked = !!data.backgroundEffectSettings.particleShootingStars;
-                document.getElementById('particle-bubbles-check').checked = !!data.backgroundEffectSettings.particleBubbles;
-                document.getElementById('particle-meteors-check').checked = !!data.backgroundEffectSettings.particleMeteors;
+        if (syncData.eyeSaverSettings) {
+            document.getElementById('eye-saver-check').checked = syncData.eyeSaverSettings.enabled;
+            document.getElementById('eye-saver-strength-slider').value = syncData.eyeSaverSettings.strength;
+            ThemePark.features.updateEyeSaver(syncData.eyeSaverSettings.enabled, syncData.eyeSaverSettings.strength);
+        }
 
-                chrome.storage.local.get('customThemeSettings', ({customThemeSettings}) => {
-                    const currentBgColor = (customThemeSettings && customThemeSettings.mainBgColor) || ThemePark.config.defaultCustomSettings.mainBgColor;
-                    ThemePark.features.applyBackgroundEffect(data.backgroundEffectSettings, currentBgColor);
-                });
-            } else {
-                // 기본값 적용 (모두 'none' 또는 false)
-                document.querySelector('input[name="light-effect"][value="none"]').checked = true;
-                document.querySelector('input[name="environment-effect"][value="none"]').checked = true;
-                document.querySelector('input[name="weather-effect"][value="none"]').checked = true;
-                // 체크박스도 기본값으로 설정 (모두 false)
-                document.getElementById('particle-stars-check').checked = false;
-                document.getElementById('particle-fireflies-check').checked = false;
-                document.getElementById('particle-sakura-check').checked = false;
-                document.getElementById('particle-leaves-check').checked = false;
-                document.getElementById('particle-fireworks-check').checked = false;
-                document.getElementById('particle-shooting-stars-check').checked = false;
-                document.getElementById('particle-bubbles-check').checked = false;
-                document.getElementById('particle-meteors-check').checked = false;
+        if (syncData.backgroundEffectSettings) {
+            document.querySelector(`input[name="light-effect"][value="${syncData.backgroundEffectSettings.lightEffect || 'none'}"]`).checked = true;
+            document.querySelector(`input[name="environment-effect"][value="${syncData.backgroundEffectSettings.environmentEffect || 'none'}"]`).checked = true;
+            document.querySelector(`input[name="weather-effect"][value="${syncData.backgroundEffectSettings.weatherEffect || 'none'}"]`).checked = true;
 
-                chrome.storage.local.get('customThemeSettings', ({customThemeSettings}) => {
-                    const currentBgColor = (customThemeSettings && customThemeSettings.mainBgColor) || ThemePark.config.defaultCustomSettings.mainBgColor;
-                    ThemePark.features.applyBackgroundEffect({ // 기본 settings 객체 전달
-                        lightEffect: 'none', environmentEffect: 'none', weatherEffect: 'none',
-                        particleStars: false, particleFireflies: false, particleSakura: false,
-                        particleLeaves: false, particleFireworks: false, particleShootingStars: false,
-                        particleBubbles: false, particleMeteors: false
-                    }, currentBgColor);
-                });
-            }
-        });
+            document.getElementById('particle-stars-check').checked = !!syncData.backgroundEffectSettings.particleStars;
+            document.getElementById('particle-fireflies-check').checked = !!syncData.backgroundEffectSettings.particleFireflies;
+            document.getElementById('particle-sakura-check').checked = !!syncData.backgroundEffectSettings.particleSakura;
+            document.getElementById('particle-leaves-check').checked = !!syncData.backgroundEffectSettings.particleLeaves;
+            document.getElementById('particle-fireworks-check').checked = !!syncData.backgroundEffectSettings.particleFireworks;
+            document.getElementById('particle-shooting-stars-check').checked = !!syncData.backgroundEffectSettings.particleShootingStars;
+            document.getElementById('particle-bubbles-check').checked = !!syncData.backgroundEffectSettings.particleBubbles;
+            document.getElementById('particle-meteors-check').checked = !!syncData.backgroundEffectSettings.particleMeteors;
 
-        // [추가] chrome.storage.local에서 rankingHistory를 불러온다.
-        chrome.storage.local.get('rankingHistory', ({ rankingHistory }) => {
-            ThemePark.state.rankingHistory = rankingHistory || [];
-            this.populateAutoSaveHistory(); // 불러온 후 목록을 업데이트
-        });
-        
-        chrome.storage.local.get('customThemeSettings', ({customThemeSettings}) => {
-            const settings = { ...ThemePark.config.defaultCustomSettings, ...customThemeSettings };
-            this.updateColorPickers(settings);
-            if(document.getElementById('theme-select').value === 'custom') {
-                ThemePark.features.applyCustomTheme(settings);
-                ThemePark.features.applyCustomScrollbarStyles(settings);
-            }
-        });
+            const currentBgColor = (localData.customThemeSettings && localData.customThemeSettings.mainBgColor) || ThemePark.config.defaultCustomSettings.mainBgColor;
+            ThemePark.features.applyBackgroundEffect(syncData.backgroundEffectSettings, currentBgColor);
+        } else {
+            document.querySelector('input[name="light-effect"][value="none"]').checked = true;
+            document.querySelector('input[name="environment-effect"][value="none"]').checked = true;
+            document.querySelector('input[name="weather-effect"][value="none"]').checked = true;
+
+            document.getElementById('particle-stars-check').checked = false;
+            document.getElementById('particle-fireflies-check').checked = false;
+            document.getElementById('particle-sakura-check').checked = false;
+            document.getElementById('particle-leaves-check').checked = false;
+            document.getElementById('particle-fireworks-check').checked = false;
+            document.getElementById('particle-shooting-stars-check').checked = false;
+            document.getElementById('particle-bubbles-check').checked = false;
+            document.getElementById('particle-meteors-check').checked = false;
+
+            const currentBgColor = (localData.customThemeSettings && localData.customThemeSettings.mainBgColor) || ThemePark.config.defaultCustomSettings.mainBgColor;
+            ThemePark.features.applyBackgroundEffect({
+                lightEffect: 'none', environmentEffect: 'none', weatherEffect: 'none',
+                particleStars: false, particleFireflies: false, particleSakura: false,
+                particleLeaves: false, particleFireworks: false, particleShootingStars: false,
+                particleBubbles: false, particleMeteors: false
+            }, currentBgColor);
+        }
+
+        ThemePark.state.rankingHistory = localData.rankingHistory || [];
+        this.populateAutoSaveHistory();
+
+        const customThemeSettings = { ...ThemePark.config.defaultCustomSettings, ...localData.customThemeSettings };
+        this.updateColorPickers(customThemeSettings);
+        // themeSelect의 change 이벤트가 이미 _updateLayoutFromUI를 호출하므로 여기서 중복 호출 방지
+        // if(document.getElementById('theme-select').value === 'custom') {
+        //     ThemePark.features.applyCustomTheme(customThemeSettings);
+        //     ThemePark.features.applyCustomScrollbarStyles(customThemeSettings);
+        // }
     },
     _formatTimeAgo(dateString) {
         const now = new Date();
@@ -1120,8 +1105,7 @@ ThemePark.ui = {
             return;
         }
         history.forEach(item => {
-            const li = document.createElement('li');
-            li.className = 'history-item';
+            const li = this._createElement('li', { className: 'history-item' });
             li.innerHTML = `
                 <div class="history-info">
                     <span class="history-time">${new Date(item.timestamp).toLocaleString()}</span>
@@ -1162,10 +1146,10 @@ ThemePark.ui = {
         }
         ThemePark.state.favoriteCreators.forEach(creatorId => {
             const creatorName = ThemePark.state.creatorMap?.get(creatorId) || creatorId;
-            const li = document.createElement('li');
-            li.className = 'favorite-item';
-            li.dataset.creatorId = creatorId;
-            li.innerHTML = `<span>${creatorName}</span><button class="delete-fav-btn" title="즐겨찾기에서 제거">×</button>`;
+            const li = this._createElement('li', { className: 'favorite-item', dataset: { creatorId } }, [
+                this._createElement('span', { text: creatorName }),
+                this._createElement('button', { className: 'delete-fav-btn', title: '즐겨찾기에서 제거', text: '×' })
+            ]);
             listElement.appendChild(li);
         });
         listElement.querySelectorAll('.delete-fav-btn').forEach(btn => {
@@ -1177,31 +1161,24 @@ ThemePark.ui = {
         });
         console.log("[ThemePark UI] 즐겨찾기 목록 불러오기 완료.");
     },
-    
+
     /**
      * 랭킹 모달을 보여주는 함수다.
      * @param {Array<object>} currentData - 현재 표시할 랭킹 그룹 데이터
-     * @param {object} comparisonInfo - 비교할 과거 데이터 { data: Array, timestamp: string }
-     * @param {HTMLElement} [loadingToastRef=null] - fetchAndDisplayRankings에서 전달받은 로딩 토스트의 참조
+     * @param {object} comparisonInfo - 비교할 과거 데이터 { data: Map<string, number>, timestamp: string }
+     * @param {Array<object>} charactersWithDetails - 현재 시점의 모든 상세 캐릭터 데이터 (랭킹 저장용)
      */
-    showRankingModal(currentData, comparisonInfo = null, loadingToastRef = null) {
-        // 기존 랭킹 모달이 있다면 제거
+    showRankingModal(currentData, comparisonInfo = null, charactersWithDetails) {
         document.getElementById('ranking-modal-overlay')?.remove();
 
         const settings = ThemePark.state.rankingModalSettings;
-        const overlay = document.createElement('div');
-        overlay.id = 'ranking-modal-overlay';
-        overlay.className = 'modal-overlay';
-        overlay.style.zIndex = '2147483647'; // 모달의 z-index (토스트보다 낮아야 함)
+        const overlay = this._createElement('div', { id: 'ranking-modal-overlay', className: 'modal-overlay', style: { zIndex: '2147483640' } }); // z-index 수정
         ThemePark.state.rankingModal = overlay;
 
+        // comparisonInfo.data는 이제 Map 형태로 전달됩니다.
         let comparisonMap = new Map();
-        if (comparisonInfo && Array.isArray(comparisonInfo.data)) {
-            comparisonInfo.data.forEach(group => {
-                if (Array.isArray(group.characters)) {
-                    group.characters.forEach(char => comparisonMap.set(char.id, char.interactionCountWithRegen));
-                }
-            });
+        if (comparisonInfo && comparisonInfo.data instanceof Map) {
+            comparisonMap = comparisonInfo.data;
         }
 
         let mainTabContent = '';
@@ -1211,13 +1188,16 @@ ThemePark.ui = {
             currentData.forEach(group => {
                 if (!group.characters || group.characters.length === 0) return;
 
-                // "퀘스트" 섹션에만 새로고침 및 저장 버튼 추가
                 const isMainRankingSection = group.title === '퀘스트';
                 const actionButtonsHTML = isMainRankingSection ? `
                     <button class="ranking-action-btn refresh-ranking-btn" title="새로고침(수동 저장)">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>새로고침
                     </button>
+                    <button class="ranking-action-btn save-ranking-btn" title="현재 랭킹을 기록으로 저장">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>현재 기록 저장
+                    </button>
                 ` : '';
+
 
                 const cardsHTML = group.characters.map((char, index) => {
                     if (!char || !char.id || !char.name || !char.imageUrl || !char.creator || !char.creator.nickname) {
@@ -1226,20 +1206,46 @@ ThemePark.ui = {
                     }
 
                     let cardClass = 'ranking-card';
-                    if (group.isRankingSection) {
+                    // 랭킹 섹션이 '실시간 TOP 10 캐릭터'일 때만 랭킹 효과를 적용
+                    if (group.title === '실시간 TOP 10 캐릭터') { // '퀘스트' 제외
                         if (index === 0) cardClass += ' rank-gold';
                         else if (index === 1) cardClass += ' rank-silver';
                         else if (index === 2) cardClass += ' rank-bronze';
                     }
                     const isFavorited = ThemePark.state.favoriteCreators.has(char.creator.id);
+                    // 랭킹 색상이 적용되지 않은 경우에만 즐겨찾기 클래스 추가
                     if (isFavorited && !cardClass.includes('rank-')) {
                         cardClass += ' favorite-creator';
                     }
-                    
-                    const tagsHTML = (char.hashtags || []).slice(0, 4).map(tag => `<span class="ranking-card-tag">#${tag}</span>`).join('');
+
+                    const tagsHTML = (char.hashtags || []).slice(0, 3).map(tag => `<span class="ranking-card-tag">#${tag}</span>`).join(''); // 최대 3개
                     const interactionCount = (char.interactionCountWithRegen || 0).toLocaleString();
                     let comparisonHTML = '';
 
+                    // #순애, #빼앗김, #블루아카이브 해시태그 처리를 위한 변수
+                    const allCharHashtags = (char.hashtags || []).map(tag => tag.toLowerCase()); // 모든 해시태그를 소문자로 변환
+
+                    let specialEffectClass = '';
+                    let creatorHighlightStyle = '';
+                    let cardOpacityStyle = '';
+                    let additionalTagHtml = ''; // 이름 옆에 추가될 태그 HTML 변수 선언
+
+                    // #순애 해시태그 감지
+                    if (allCharHashtags.includes(ThemePark.config.SPECIAL_HASHTAGS.PURE_LOVE.toLowerCase())) {
+                        specialEffectClass += ' hashtag-pure-love';
+                        additionalTagHtml = `<span class="ranking-card-tag ranking-additional-tag tag-pure-love">순애 인증</span>`; // '순애 인증' 태그
+                    }
+                    // #빼앗김 해시태그 감지
+                    if (allCharHashtags.includes(ThemePark.config.SPECIAL_HASHTAGS.BETRAYAL.toLowerCase())) {
+                        specialEffectClass += ' hashtag-betrayal';
+                        additionalTagHtml = `<span class="ranking-card-tag ranking-additional-tag tag-betrayal">N주의</span>`; // 'N주의' 태그
+                    }
+                    // #블루아카이브 해시태그 감지
+                    if (allCharHashtags.includes(ThemePark.config.SPECIAL_HASHTAGS.BLUE_ARCHIVE.toLowerCase())) {
+                        creatorHighlightStyle = ' style="color: #ff8c00 !important; font-weight: bold;"'; // 주황색 강조 (기존 유지)
+                        cardOpacityStyle = ' style="opacity: 0.5;"'; // 반투명 (기존 유지)
+                        additionalTagHtml = `<span class="ranking-card-tag ranking-additional-tag tag-bluearchive">도용 의심</span>`; // '도용 의심' 태그
+                    }
                     if (comparisonMap.has(char.id)) {
                         const oldInteraction = comparisonMap.get(char.id);
                         const diff = char.interactionCountWithRegen - oldInteraction;
@@ -1255,12 +1261,15 @@ ThemePark.ui = {
                     }
 
                     return `
-                        <div class="${cardClass}" data-plot-id="${char.id}" data-creator-id="${char.creator.id}">
+                        <div class="${cardClass}${specialEffectClass}" data-plot-id="${char.id}" data-creator-id="${char.creator.id}" data-all-hashtags="${(char.hashtags || []).join(',')}"${cardOpacityStyle}>
                             <button class="favorite-btn ${isFavorited ? 'active' : ''}" title="제작자 즐겨찾기">⭐</button>
                             <a href="/ko/plots/${char.id}/profile" target="_blank" draggable="false" class="ranking-card-link">
                                 <img src="${char.imageUrl}" alt="${char.name}" class="ranking-card-image" draggable="false">
                                 <div class="ranking-card-body">
-                                    <h4 class="ranking-card-name">${char.name}</h4>
+                                    <h4 class="ranking-card-name">
+                                        ${char.name}
+                                        ${additionalTagHtml}
+                                    </h4>
                                     <div class="card-bottom-info">
                                         <div class="ranking-card-tags">${tagsHTML}</div>
                                         ${comparisonHTML}
@@ -1268,7 +1277,7 @@ ThemePark.ui = {
                                 </div>
                             </a>
                             <div class="ranking-card-footer">
-                                <span class="ranking-card-creator">${char.creator.nickname}</span>
+                                <span class="ranking-card-creator"${creatorHighlightStyle}>${char.creator.nickname}</span>
                                 <span class="ranking-card-interactions">💬 ${interactionCount}</span>
                             </div>
                         </div>`;
@@ -1282,9 +1291,9 @@ ThemePark.ui = {
                                     </section>`;
             });
         }
-        
-        const comparisonTimeText = comparisonInfo ? `<p class="comparison-info-text">${new Date(comparisonInfo.timestamp).toLocaleString()} 데이터와 비교 중</p>` : '';
-        
+
+        const comparisonTimeText = comparisonInfo && comparisonInfo.timestamp ? `<p class="comparison-info-text">${new Date(comparisonInfo.timestamp).toLocaleString()} 데이터와 비교 중</p>` : '';
+
         overlay.innerHTML = `
             <div class="modal-content ranking-modal-content" style="width: ${settings.width}vw; height: ${settings.height}vh;">
                 <div class="modal-header"><h2>🏆 캐릭터 랭킹</h2><button class="close-button">&times;</button></div>
@@ -1329,6 +1338,19 @@ ThemePark.ui = {
                             </div>
                         </div>
                         <div class="setting-section">
+                            <div class="section-header">캐릭터 카드 레이아웃</div>
+                            <div class="section-content">
+                                <div class="setting-item">
+                                    <label>한 줄에 표시할 카드 수:</label>
+                                    <div class="radio-group">
+                                        <label><input type="radio" name="cards-per-row" value="2"><span class="custom-control"></span>2개</label>
+                                        <label><input type="radio" name="cards-per-row" value="3" checked><span class="custom-control"></span>3개</label>
+                                        <label><input type="radio" name="cards-per-row" value="4"><span class="custom-control"></span>4개</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="setting-section">
                              <div class="section-header">자동 저장</div>
                              <div class="section-content">
                                 <div class="setting-item">
@@ -1361,49 +1383,60 @@ ThemePark.ui = {
         };
         overlay.addEventListener('click', e => (e.target === overlay) && closeModal());
         overlay.querySelector('.close-button').addEventListener('click', closeModal);
-        
-        const tabButtons = overlay.querySelectorAll('.ranking-tab-btn');
-        const tabPanes = overlay.querySelectorAll('.ranking-tab-pane');
-        tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                tabButtons.forEach(btn => btn.classList.remove('active'));
-                tabPanes.forEach(pane => pane.classList.remove('active'));
-                e.currentTarget.classList.add('active');
-                const targetPane = overlay.querySelector(`#ranking-${e.currentTarget.dataset.tab}-pane`);
-                targetPane.classList.add('active');
-                if (e.currentTarget.dataset.tab === 'data') { ThemePark.ui.populateAutoSaveHistory(); } 
-                else if (e.currentTarget.dataset.tab === 'settings') { ThemePark.ui.populateFavoritesList(); }
+
+        // 탭 버튼 클릭 이벤트 위임
+        const rankingTabsContainer = overlay.querySelector('.ranking-tabs');
+        rankingTabsContainer.addEventListener('click', (e) => {
+            const button = e.target.closest('.ranking-tab-btn');
+            if (!button) return;
+
+            overlay.querySelectorAll('.ranking-tab-btn').forEach(btn => btn.classList.remove('active'));
+            overlay.querySelectorAll('.ranking-tab-pane').forEach(pane => pane.classList.remove('active'));
+            button.classList.add('active');
+            const targetPane = overlay.querySelector(`#ranking-${button.dataset.tab}-pane`);
+            targetPane.classList.add('active');
+            if (button.dataset.tab === 'data') { ThemePark.ui.populateAutoSaveHistory(); }
+            else if (button.dataset.tab === 'settings') { ThemePark.ui.populateFavoritesList(); }
+        });
+
+        // 데이터 관리 및 설정 섹션 collapse/expand 이벤트 다시 연결
+        overlay.querySelectorAll('.setting-section .section-header').forEach(header => {
+            header.addEventListener('click', (e) => {
+                const section = e.currentTarget.closest('.setting-section');
+                if (section.classList.contains('disabled')) {
+                    console.log("[ThemePark UI] 비활성화된 섹션 클릭 무시됨.");
+                    return;
+                }
+                section.classList.toggle('collapsed');
+                console.log(`[ThemePark UI] 섹션 토글: ${section.id}, Collapsed: ${section.classList.contains('collapsed')}`);
             });
         });
 
-        // 랭킹 카드 내 즐겨찾기 버튼 이벤트 리스너
+
         overlay.querySelectorAll('.favorite-btn').forEach(btn => {
             btn.addEventListener('click', async e => {
                 const creatorId = e.target.closest('.ranking-card').dataset.creatorId;
                 await ThemePark.features.toggleFavoriteCreator(creatorId);
-                // 즐겨찾기 버튼 상태를 즉시 반영하기 위해 버튼 클래스 토글
-                e.target.classList.toggle('active', ThemePark.state.favoriteCreators.has(creatorId));
+                // 모달 리로드 없이 UI 직접 업데이트되므로 이 줄은 더 이상 필요 없음.
+                // e.target.classList.toggle('active', ThemePark.state.favoriteCreators.has(creatorId));
             });
         });
 
-        // "(퀘스트)" 섹션의 새로고침 및 저장 버튼 이벤트 리스너 추가
         const refreshBtn = overlay.querySelector('.refresh-ranking-btn');
         const saveBtn = overlay.querySelector('.save-ranking-btn');
         if (refreshBtn) {
             refreshBtn.addEventListener('click', () => {
                 this.showDynamicToast({ title: '랭킹 새로고침 중...', icon: '🔄', isProgress: true });
-                ThemePark.features.fetchAndDisplayRankings(); // 랭킹 새로고침
+                ThemePark.features.fetchAndDisplayRankings();
             });
         }
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
-                // 현재 모달에 표시된 상세 캐릭터 데이터를 저장.
-                // currentData가 그룹화되기 전의 원본 detailedCharacter 배열이라고 가정하고 전달
-                ThemePark.features.addRankingHistory(charactersWithDetails); // charactersWithDetails 변수는 showRankingModal의 스코프 내에 있어야 함
-                this.showDynamicToast({ title: '랭킹 수동 저장 완료!', icon: '💾', duration: 2000 });
+                ThemePark.features.addRankingHistory(charactersWithDetails);
+                this.showDynamicToast({ title: '랭킹 수동 저장 완료!', icon: '💾', duration: ThemePark.config.TOAST_DURATION_SHORT });
             });
         }
-        
+
         overlay.querySelector('#backup-ranking-btn').addEventListener('click', () => ThemePark.features.backupRankingData(currentData));
         overlay.querySelector('#restore-ranking-btn').addEventListener('click', () => ThemePark.features.restoreAndCompareData());
 
@@ -1411,44 +1444,107 @@ ThemePark.ui = {
         const widthSlider = overlay.querySelector('#modal-width-slider');
         const heightSlider = overlay.querySelector('#modal-height-slider');
 
-        const updateAndSaveSettings = () => {
-            ThemePark.state.rankingModalSettings.width = widthSlider.value;
-            ThemePark.state.rankingModalSettings.height = heightSlider.value;
-            chrome.storage.sync.set({ rankingModalSettings: ThemePark.state.rankingModalSettings });
+        // 슬라이더 제약 조건 및 비활성화 여부 업데이트 함수
+        const updateSliderConstraints = () => {
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            // 뷰포트 너비가 뷰포트 높이의 특정 비율(예: 70%)보다 작을 때 너비 슬라이더 비활성화
+            if (viewportWidth < viewportHeight * 0.7) {
+                widthSlider.disabled = true;
+                widthSlider.title = '창의 너비가 충분하지 않아 조절이 제한됩니다.';
+            } else {
+                widthSlider.disabled = false;
+                widthSlider.title = '';
+            }
         };
+
+        // 초기 로드 시 제약 조건 업데이트
+        updateSliderConstraints();
+
+        // 창 크기 변경 시 제약 조건 업데이트 (디바운스 적용)
+        window.addEventListener('resize', ThemePark.utils.debounce(updateSliderConstraints, 200));
+
+
+        // 실시간으로 % 텍스트만 업데이트 (input 이벤트)
         widthSlider.addEventListener('input', e => {
-            modalContent.style.width = `${e.target.value}vw`;
             e.target.previousElementSibling.querySelector('span').textContent = `${e.target.value}%`;
         });
         heightSlider.addEventListener('input', e => {
-            modalContent.style.height = `${e.target.value}vh`;
             e.target.previousElementSibling.querySelector('span').textContent = `${e.target.value}%`;
         });
-        widthSlider.addEventListener('change', updateAndSaveSettings);
-        heightSlider.addEventListener('change', updateAndSaveSettings);
-        
+
+        // 마우스를 놓았을 때만 크기 변경 및 저장 (change 이벤트, 디바운스 적용)
+        const debouncedUpdateAndSaveSettings = ThemePark.utils.debounce(async () => {
+            ThemePark.state.rankingModalSettings.width = widthSlider.value;
+            ThemePark.state.rankingModalSettings.height = heightSlider.value;
+            // cardsPerRow도 저장합니다.
+            ThemePark.state.rankingModalSettings.cardsPerRow = parseInt(overlay.querySelector('input[name="cards-per-row"]:checked').value);
+
+            await ThemePark.storage.set({ rankingModalSettings: ThemePark.state.rankingModalSettings });
+            console.log("[ThemePark UI] 랭킹 모달 크기 설정 저장됨:", ThemePark.state.rankingModalSettings);
+        }, 300); // 300ms 디바운스
+
+        widthSlider.addEventListener('change', e => {
+            modalContent.style.width = `${e.target.value}vw`;
+            debouncedUpdateAndSaveSettings();
+        });
+        heightSlider.addEventListener('change', e => {
+            modalContent.style.height = `${e.target.value}vh`;
+            debouncedUpdateAndSaveSettings();
+        });
+
+        // 한 줄에 표시할 카드 수 라디오 버튼 이벤트 리스너
+        const cardsPerRowRadios = overlay.querySelectorAll('input[name="cards-per-row"]');
+        const currentCardsPerRow = ThemePark.state.rankingModalSettings.cardsPerRow || 3; // 기본값 3
+        const defaultCardsPerRowRadio = overlay.querySelector(`input[name="cards-per-row"][value="${currentCardsPerRow}"]`);
+        if (defaultCardsPerRowRadio) {
+            defaultCardsPerRowRadio.checked = true;
+        }
+
+        // 레이아웃 적용 함수
+        const applyCardsPerRow = (num) => {
+            // 모든 .ranking-grid에 적용되도록 수정
+            overlay.querySelectorAll('.ranking-grid').forEach(grid => {
+                grid.style.gridTemplateColumns = `repeat(${num}, 1fr)`;
+            });
+        };
+
+        // 초기 로드 시 적용
+        applyCardsPerRow(currentCardsPerRow);
+
+        cardsPerRowRadios.forEach(radio => {
+            radio.addEventListener('change', async e => {
+                const newCardsPerRow = parseInt(e.target.value);
+                ThemePark.state.rankingModalSettings.cardsPerRow = newCardsPerRow;
+                // 바로 저장하고 UI에 반영
+                await ThemePark.storage.set({ rankingModalSettings: ThemePark.state.rankingModalSettings });
+                applyCardsPerRow(newCardsPerRow);
+                console.log("[ThemePark UI] 한 줄에 표시할 카드 수 변경됨:", newCardsPerRow);
+            });
+        });
+
+
         const autoSaveRadios = overlay.querySelectorAll('input[name="autosave-interval"]');
-        const currentInterval = ThemePark.state.rankingModalSettings.autoSaveInterval || '10';
-        // 'checked' 속성을 올바르게 설정하여 기본값을 반영
+        const currentInterval = ThemePark.state.rankingModalSettings.autoSaveInterval || ThemePark.config.DEFAULT_RANKING_AUTOSAVE_MINUTES.toString();
         const defaultRadio = overlay.querySelector(`input[name="autosave-interval"][value="${currentInterval}"]`);
         if (defaultRadio) {
             defaultRadio.checked = true;
         }
 
         autoSaveRadios.forEach(radio => {
-            radio.addEventListener('change', e => {
+            radio.addEventListener('change', async e => {
                 ThemePark.state.rankingModalSettings.autoSaveInterval = e.target.value;
-                chrome.storage.sync.set({ rankingModalSettings: ThemePark.state.rankingModalSettings });
+                await ThemePark.storage.set({ rankingModalSettings: ThemePark.state.rankingModalSettings });
                 ThemePark.features.startRankingAutoSave();
                 ThemePark.features.startAutoSaveCountdown();
             });
         });
-        
-        ThemePark.ui.populateFavoritesList(); // 즐겨찾기 목록 초기 로드
-        overlay.querySelector('#clear-favorites-btn').addEventListener('click', () => ThemePark.features.clearAllFavorites());
-        ThemePark.features.startAutoSaveCountdown(); // 모달이 열릴 때 카운트다운 시작
-    },
 
+        ThemePark.ui.populateFavoritesList();
+        overlay.querySelector('#clear-favorites-btn').addEventListener('click', () => ThemePark.features.clearAllFavorites());
+        ThemePark.features.startAutoSaveCountdown();
+    },
 
     /**
      * UI의 전체 HTML 구조를 문자열로 반환하는 함수다.
@@ -1488,7 +1584,7 @@ ThemePark.ui = {
                         <button id="open-translator-btn" class="main-grid-button"><span class="icon">🌐</span>번역 도구</button>
                     </div>
                 </div></div>
-                
+
                 <div id="general-tab" class="tab-pane"><div class="tab-header"><span>기능 및 저장</span><span class="close-tab-btn">&times;</span></div><div class="tab-content-body">
                     <div class="setting-section collapsed" id="layout-section"><div class="section-header">레이아웃</div><div class="section-content" id="layout-settings-wrapper">
                         <div class="setting-item"><label>글꼴:</label><select id="font-select"><option value="default">기본 (Pretendard)</option><option value="Noto Sans KR">Noto Sans KR</option></select></div>
