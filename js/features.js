@@ -270,15 +270,21 @@ ThemePark.features = {
 
         let container = document.getElementById('theme-park-background-effects');
 
-        const noEffects = !settings.lightEffect || settings.lightEffect === 'none' &&
-                         !settings.environmentEffect || settings.environmentEffect === 'none' &&
-                         !settings.weatherEffect || settings.weatherEffect === 'none' &&
-                         !settings.particleStars && !settings.particleFireflies && !settings.particleSakura && !settings.particleLeaves &&
-                         !settings.particleFireworks && !settings.particleShootingStars && !settings.particleBubbles && !settings.particleMeteors;
+        const noEffects = (settings.lightEffect === 'none' || !settings.lightEffect) &&
+                         (settings.environmentEffect === 'none' || !settings.environmentEffect) &&
+                         (settings.weatherEffect === 'none' || !settings.weatherEffect) &&
+                         !settings.particleStars &&
+                         !settings.particleFireflies &&
+                         !settings.particleSakura &&
+                         !settings.particleLeaves &&
+                         !settings.particleFireworks &&
+                         !settings.particleShootingStars &&
+                         !settings.particleBubbles &&
+                         !settings.particleMeteors;
 
         if (noEffects) {
             if (container) container.remove();
-            document.body.style.backgroundColor = bgColor;
+            document.body.style.backgroundColor = bgColor; // 배경색은 여기서 설정
             return;
         }
 
