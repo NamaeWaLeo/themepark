@@ -769,14 +769,31 @@ ThemePark.features = {
      * @param {object} comparisonInfo - 비교할 과거 데이터 { data: Array, timestamp: string }
      */
     async fetchAndDisplayRankings(comparisonInfo = null) {
-        console.log("[ThemePark] 랭킹 데이터 불러오기 시작...");
-        ThemePark.ui.showDynamicToast({ title: '랭킹 데이터 불러오는 중...', icon: '📈', isProgress: true });
+        // 전체 랭킹 불러오기 작업에 대한 단일 로딩 토스트 관리
+        let rankingLoadingToast = ThemePark.ui.showDynamicToast({ title: '랭킹 데이터 불러오는 중...', icon: '📈', isProgress: true });
+
         try {
-            console.log("[ThemePark] DOM에서 기본 캐릭터 정보 추출 중...");
             const basicCharacters = this._extractBasicCharacterDataFromDOM();
-            console.log("[ThemePark] 추출된 기본 캐릭터:", basicCharacters);
+
+            // 현재 페이지가 랭킹 데이터를 포함하지 않는 URL(예: 추천 탭)일 경우 예외 처리
+            // _extractBasicCharacterDataFromDOM()이 0개의 섹션을 반환하는 경우
+            if (basicCharacters.length === 0) {
+                // Zeta AI의 메인 랭킹 페이지 (기본 /ko 경로)가 아니면서 캐릭터가 없는 경우
+                if (window.location.pathname !== '/ko' && window.location.pathname !== '/') {
+                     ThemePark.ui.hideDynamicToast(rankingLoadingToast); // 로딩 토스트 숨김
+                     ThemePark.ui.showDynamicToast({
+                         title: '랭킹 데이터 없음',
+                         details: '현재 페이지에서는 랭킹 데이터를 찾을 수 없습니다. Zeta AI 메인 페이지에서 확인해 주세요.',
+                         icon: '❓',
+                         duration: 5000
+                     });
+                     return; // 더 이상 진행하지 않고 함수 종료
+                }
+                // /ko 또는 / 경로인데도 데이터가 없으면, 단순히 데이터 없음을 알림
+                // 이 경우 "표시할 랭킹 데이터가 없습니다."는 showRankingModal에서 처리됨
+            }
             
-            console.log("[ThemePark] 각 캐릭터의 상세 데이터 API 호출 중...");
+            // 각 캐릭터의 plotId를 사용하여 Zeta API에서 상세 데이터 (대화량, 해시태그) 가져오기
             const detailedCharacterPromises = basicCharacters.map(async (basicChar) => {
                 if (!basicChar.id) {
                     console.warn('[ThemePark] plotId가 없는 캐릭터가 발견되었습니다. 건너뜁니다:', basicChar);
@@ -797,15 +814,11 @@ ThemePark.features = {
             });
 
             const charactersWithDetails = (await Promise.all(detailedCharacterPromises)).filter(char => char !== null);
-            console.log("[ThemePark] API 호출 후 상세 정보가 포함된 캐릭터:", charactersWithDetails);
             
-            console.log("[ThemePark] 캐릭터 데이터 그룹화 및 처리 중...");
             const processedRankings = this._groupAndProcessCharacters(charactersWithDetails);
-            console.log("[ThemePark] 최종 처리된 랭킹 데이터:", processedRankings);
             
             const { favoriteCreators = [] } = await chrome.storage.sync.get('favoriteCreators');
             ThemePark.state.favoriteCreators = new Set(favoriteCreators);
-            console.log("[ThemePark] 즐겨찾는 제작자 로드됨:", ThemePark.state.favoriteCreators);
 
             const { rankingModalSettings } = await chrome.storage.sync.get('rankingModalSettings');
             ThemePark.state.rankingModalSettings = { 
@@ -814,21 +827,21 @@ ThemePark.features = {
                 autoSaveInterval: '10', 
                 ...rankingModalSettings 
             };
-            console.log("[ThemePark] 랭킹 모달 설정 로드됨:", ThemePark.state.rankingModalSettings);
 
-            ThemePark.ui.showRankingModal(processedRankings, comparisonInfo);
+            // 모든 데이터 처리 완료 후 로딩 토스트 숨기고 완료 토스트 표시
+            ThemePark.ui.hideDynamicToast(rankingLoadingToast);
+            ThemePark.ui.showRankingModal(processedRankings, comparisonInfo, charactersWithDetails); // charactersWithDetails를 모달에 전달
             ThemePark.ui.showDynamicToast({ title: '랭킹 불러오기 완료!', icon: '✅' });
-            console.log("[ThemePark] 랭킹 불러오기 완료. 모달 표시됨.");
 
             this.startRankingAutoSave();
             this.startAutoSaveCountdown();
 
             if (!comparisonInfo) {
-                this.addRankingHistory(charactersWithDetails);
-                console.log("[ThemePark] 현재 랭킹 데이터 자동 저장 기록에 추가됨.");
+                this.addRankingHistory(charactersWithDetails); // 상세 정보가 포함된 데이터 저장
             }
 
         } catch (error) {
+            ThemePark.ui.hideDynamicToast(rankingLoadingToast); // 에러 발생 시에도 로딩 토스트 숨김
             console.error("[ThemePark] 랭킹 불러오기 및 표시 실패:", error);
             ThemePark.ui.showDynamicToast({ title: '랭킹 불러오기 실패', details: error.message, icon: '❌', duration: 5000 });
         }
@@ -861,7 +874,7 @@ ThemePark.features = {
         topLevelSections.forEach(topSection => {
             // 섹션 제목을 추출합니다. (예: '⚠️ [시스템] 퀘스트가 도착했습니다!', '실시간 TOP 10 캐릭터')
             const sectionTitleElement = topSection.querySelector('h2.title20');
-            const sectionTitle = sectionTitleElement ? sectionTitleElement.textContent.trim().replace('⚠️ [시스템] 퀘스트가 도착했습니다!', '전체 인기 랭킹 (퀘스트)') : '알 수 없는 섹션';
+            const sectionTitle = sectionTitleElement ? sectionTitleElement.textContent.trim().replace('⚠️ [시스템] 퀘스트가 도착했습니다!', '퀘스트') : '알 수 없는 섹션';
 
             // 각 섹션 내에서 개별 캐릭터 카드 요소들을 찾습니다.
             // Swiper 컴포넌트 내부에 `.swiper-slide`가 있고 그 안에 `.group/item`이 있습니다.
@@ -962,7 +975,7 @@ ThemePark.features = {
 
         // 최신 HTML에서 확인된 섹션 제목들을 정확하게 반영
         const sectionOrder = [
-            '전체 인기 랭킹 (퀘스트)', // ⚠️ [시스템] 퀘스트가 도착했습니다! -> 이 제목으로 변경되어 들어올 것으로 예상
+            '퀘스트', // ⚠️ [시스템] 퀘스트가 도착했습니다! -> 이 제목으로 변경되어 들어올 것으로 예상
             '실시간 TOP 10 캐릭터',
             '오늘만큼은 나도 알파메일',
             '이제 막 주목받기 시작한 캐릭터들', 
@@ -977,7 +990,7 @@ ThemePark.features = {
                 processedGroups.push({
                     title: title,
                     characters: groupedBySection[title].sort((a, b) => b.interactionCountWithRegen - a.interactionCountWithRegen),
-                    isRankingSection: title === '실시간 TOP 10 캐릭터' || title === '전체 인기 랭킹 (퀘스트)'
+                    isRankingSection: title === '실시간 TOP 10 캐릭터' || title === '퀘스트'
                 });
                 console.log(`[ThemePark] 그룹 '${title}' 생성됨. 캐릭터 수: ${groupedBySection[title].length}`);
             }
@@ -1045,15 +1058,15 @@ ThemePark.features = {
 
     /**
      * 현재 랭킹 데이터를 자동 저장 기록에 추가한다.
-     * @param {Array} currentRankingData - 현재 시점의 랭킹 데이터
+     * 이 함수는 이제 `charactersWithDetails` 배열을 직접 받습니다.
+     * @param {Array} currentDetailedCharacters - 현재 시점의 상세 캐릭터 데이터 (API 호출 후)
      */
-    async addRankingHistory(currentRankingData) {
+    async addRankingHistory(currentDetailedCharacters) {
         console.log("[ThemePark] 랭킹 기록 추가 시도...");
         const timestamp = new Date().toISOString();
-        const newRecord = { timestamp, data: currentRankingData };
+        const newRecord = { timestamp, data: currentDetailedCharacters }; // 이미 상세 데이터가 있는 배열 저장
 
         ThemePark.state.rankingHistory.push(newRecord);
-        console.log("[ThemePark] 새 기록 추가됨:", newRecord);
 
         const MAX_HISTORY = 50;
         if (ThemePark.state.rankingHistory.length > MAX_HISTORY) {
@@ -1064,11 +1077,11 @@ ThemePark.features = {
         console.log("[ThemePark] 랭킹 기록 저장 완료. 현재 기록 수:", ThemePark.state.rankingHistory.length);
     },
 
+
     /**
      * 랭킹 자동 저장을 시작하거나 재설정한다.
      */
     async startRankingAutoSave() {
-        console.log("[ThemePark] 랭킹 자동 저장 시작/재설정 시도.");
         clearInterval(ThemePark.state.rankingAutoSaveInterval);
         const intervalMinutes = parseInt(ThemePark.state.rankingModalSettings.autoSaveInterval);
 
@@ -1083,6 +1096,7 @@ ThemePark.features = {
         ThemePark.state.rankingAutoSaveInterval = setInterval(async () => {
             console.log("[ThemePark] 자동 저장 주기 도달: 랭킹 데이터 불러오기 및 저장 시작.");
             try {
+                // 자동 저장 시에는 전체 DOM에서 다시 추출하고 API를 호출
                 const basicCharacters = this._extractBasicCharacterDataFromDOM();
                 const detailedCharacterPromises = basicCharacters.map(async (basicChar) => {
                     if (!basicChar.id) return null;
@@ -1100,6 +1114,14 @@ ThemePark.features = {
                     }
                 });
                 const charactersWithDetails = (await Promise.all(detailedCharacterPromises)).filter(char => char !== null);
+                
+                // 만약 자동 저장 시 캐릭터가 하나도 추출되지 않았다면 저장하지 않고 경고
+                if (charactersWithDetails.length === 0) {
+                    console.warn('[ThemePark] 자동 저장 시 랭킹 데이터를 찾을 수 없어 저장하지 않습니다.');
+                    ThemePark.ui.showDynamicToast({ title: '자동 저장 건너뜀', details: '현재 랭킹 데이터를 찾을 수 없습니다.', icon: '⚠️', duration: 2000 });
+                    return;
+                }
+
                 this.addRankingHistory(charactersWithDetails);
                 ThemePark.ui.showDynamicToast({ title: '랭킹 자동 저장 완료!', icon: '💾', duration: 2000 });
                 ThemePark.ui.populateAutoSaveHistory();
@@ -1173,7 +1195,7 @@ ThemePark.features = {
     /**
      * 백업 파일로부터 랭킹 데이터를 불러와 현재 랭킹과 비교한다.
      */
-    restoreAndCompareData() {
+    async restoreAndCompareData() {
         console.log("[ThemePark] 랭킹 백업 파일 불러오기 및 비교 시작.");
         const input = document.createElement('input');
         input.type = 'file';
@@ -1208,7 +1230,9 @@ ThemePark.features = {
                     };
                     console.log("[ThemePark] 비교 데이터 준비 완료:", comparisonInfo);
 
-                    this.fetchAndDisplayRankings(comparisonInfo);
+                    // 현재 랭킹 데이터를 다시 불러와 비교 데이터와 함께 모달에 전달 (비교 모드)
+                    // 현재 활성화된 랭킹 데이터가 필요하므로 다시 호출
+                    await this.fetchAndDisplayRankings(comparisonInfo); 
                     console.log("[ThemePark] 랭킹 모달 비교 모드로 다시 로드됨.");
 
                 } catch (error) {

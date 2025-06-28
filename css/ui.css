@@ -818,9 +818,10 @@ html:not(.theme-park-container) { filter: none; }
 .loading-spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.2); border-top-color: #0a84ff; border-radius: 50%; animation: spin 1s linear infinite; margin: 30px auto; } 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* 다이내믹 아일랜드 알림창 (뉴모피즘) */
+/* 알림창 */
 .dynamic-island-container {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 2147483647;
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    z-index: 2147483648; /* 모달(z-index: 2147483647)보다 높게 설정하여 항상 위에 표시 */
     perspective: 800px; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
 .dynamic-island {
@@ -1235,13 +1236,18 @@ html:not(.theme-park-container) { filter: none; }
 .ranking-card .favorite-btn.active { color: #FFD700; text-shadow: 0 0 8px #FFD700; }
 
 .ranking-card-link { text-decoration: none; color: inherit; display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
-.ranking-card-image { width: 100%; height: 88px; object-fit: cover; }
+.ranking-card-image { width: 100%; height: 82px; object-fit: cover; }
 .ranking-card-body { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
 .ranking-card-name { font-size: 14px; font-weight: 600; color: #f2f2f7; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .card-bottom-info { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: auto; }
 .ranking-card-tags { display: flex; flex-wrap: wrap; gap: 4px; overflow: hidden; align-self: flex-start; flex-shrink: 1; min-width: 0; }
 .ranking-card-tag { font-size: 10px; background-color: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px; color: #c0c0c0; }
-
+.group\/item.flex.flex-col.w-\[148px\].mr-3.min-h-\[268px\].shrink-0 {
+    min-height: 215px; /* 기존 268px에서 약 20% 감소 */
+}
+.group\/item.flex.flex-col.gap-3.w-\[156px\].mr-2.min-h-\[241px\].shrink-0 {
+    min-height: 195px; /* 기존 241px에서 약 20% 감소 */
+}
 .ranking-card-footer {
     padding: 8px 10px; display: flex;
     justify-content: space-between; align-items: center;
@@ -1386,7 +1392,39 @@ button.danger { background-color: #ff453a !important; color: white !important; b
     padding-bottom: 8px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+/* 랭킹 섹션 타이틀 내 버튼 스타일 (새로고침, 수동 저장) */
+.ranking-section-title .ranking-action-btn {
+    background: rgba(255, 255, 255, 0.1); /* 배경색 */
+    border: none;
+    border-radius: 8px; /* 둥근 모서리 */
+    padding: 5px 8px; /* 패딩 */
+    font-size: 12px; /* 글자 크기 */
+    font-weight: 600;
+    color: #e0e0e0; /* 글자색 */
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    margin-left: 10px; /* 제목과의 간격 */
+    flex-shrink: 0; /* 버튼이 줄어들지 않도록 */
+    display: inline-flex; /* 아이콘과 텍스트 정렬을 위해 flex 사용 */
+    align-items: center; /* 세로 중앙 정렬 */
+    gap: 4px; /* 아이콘과 텍스트 사이 간격 */
+}
 
+.ranking-section-title .ranking-action-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px); /* 호버 시 약간 위로 이동 */
+}
+
+.ranking-section-title .ranking-action-btn:active {
+    transform: translateY(0); /* 클릭 시 원위치 */
+}
+
+/* 버튼 내 SVG 아이콘 스타일 */
+.ranking-section-title .ranking-action-btn svg {
+    width: 14px; /* 아이콘 너비 */
+    height: 14px; /* 아이콘 높이 */
+    fill: currentColor; /* 현재 폰트 색상 상속 */
+}
 .ranking-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
